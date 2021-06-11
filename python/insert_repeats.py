@@ -71,7 +71,6 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
     else:
         region_end = gene.end + upstream
         if region_end > CHROMOSOME_LENGTHS[gene.chromosome]:
-            # TODO: check if this returns correct indices for regions where region_end + upstream > len of chromosome
             region_end = CHROMOSOME_LENGTHS[gene.chromosome]          
         repeat_end = repeat.begin + repeat.repeat_region_length - 1 
         chrom_begin = region_end - repeat_end + 1 # only valid for rv strand genes
@@ -84,7 +83,7 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
     # initialize instance of database Repeat
     db_repeat = Repeat(
         source = repeat.TRD,
-        msa = ",".join(repeat.msa_original), # convert msa from list() to ',' separated str()
+        msa = ",".join(repeat.msa), # convert msa from list() to ',' separated str()
         begin = chrom_begin,
         end = chrom_begin + repeat.repeat_region_length - 1, # calculate end position
         l_effective = repeat.l_effective,
