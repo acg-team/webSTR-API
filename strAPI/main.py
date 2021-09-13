@@ -40,10 +40,20 @@ def show_genes(db: Session = Depends(get_db)):
     genes = db.query(models.Gene).all()
     return genes
 
-
+""" 
+Retrieve all repeats associated with a given gene
+     
+   Parameters
+   gene (Gene):
+        Ensembl id of a gene for which the repeats will be retrieved
+   
+    Returns
+    List of Repeats
+"""
 @app.get("/repeats/", response_model=List[schemas.Repeat])
-def show_genes(db: Session = Depends(get_db)):
-    repeats = db.query(models.Repeat).all()
+def show_repeats(gene: str, db: Session = Depends(get_db)):
+    gene_obj =  db.query(models.Gene).filter_by(ensembl_gene=gene).one()
+    repeats = db.query(models.Repeat).filter_by(gene_id = gene_obj.id).all()
     return repeats
 
 
@@ -58,20 +68,20 @@ def show_transcripts(gene: str, db: Session = Depends(get_db)):
     Parameters
     transcript (Transcript):
                 Transcript for which the Exons will be retrieved
-    protein_coding (Bool):
+    protein (Bool):
                 If True, only protein coding Exons will be returned
 
     Returns
     List of (filtered) Exons, sorted by order of appearance in the protein, so for Transcripts from the 
     reverse strand, order will be descending.
 """
-@app.get("/exons/{transcript}", response_model=List[schemas.Exon])
-def get_sorted_exons(transcript: str, db: Session = Depends(get_db)):
+@app.get("/exons/", response_model=List[schemas.Exon])
+def get_sorted_exons(transcript: str, protein: bool = False, db: Session = Depends(get_db)):
     exons = []
     transcript_obj =  db.query(models.Transcript).filter_by(ensembl_transcript=transcript).one()
     for exon in transcript_obj.exons:
-        #if protein_coding and not exon.cds:
-        #    continue
+        if protein and not exon.cds:
+            continue
         exons.append(exon)
 
     if transcript_obj.gene.strand == "fw":
