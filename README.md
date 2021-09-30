@@ -8,9 +8,9 @@ For linux, add this line to `~/.bashrc` and restart your terminal.
 
 ### Start web server
 
-Go to strAPI directory and run the following command: 
+Run the following command from the root folder of this repo: 
 
-`uvicorn main:app --reload`
+`uvicorn strAPI:main:app --reload`
 
 ### You can now access the api at `http://127.0.0.1:8000` 
 

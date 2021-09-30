@@ -1,2 +1,2 @@
-import repeats.models
-import repeats.schemas
+import strAPI.repeats.models
+import strAPI.repeats.schemas
