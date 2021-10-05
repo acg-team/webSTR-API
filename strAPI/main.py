@@ -37,7 +37,6 @@ app = FastAPI(
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
-    openapi_tags=tags_metadata,
     redoc_url="/docs",
     docs_url=None
 )
@@ -50,6 +49,7 @@ def custom_openapi():
         version="0.0.1",
         description=description,
         routes=app.routes,
+        tags=tags_metadata
     )
     openapi_schema["info"]["x-logo"] = {
         "url": "https://www.sib.swiss//templates/sib/images/SIB_LogoQ_GBv.svg"
