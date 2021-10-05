@@ -15,4 +15,6 @@ ENV DB_CONN="sqlite:///db/example.db"
 
 EXPOSE 5000
 
-CMD ["uvicorn", "--host", "0.0.0.0", "--port", "5000", "strAPI.main:app"]
+CMD uvicorn strAPI.main:app --host=0.0.0.0 --port=${PORT:-5000}
+
+
