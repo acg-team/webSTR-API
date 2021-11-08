@@ -1,122 +1,68 @@
-from .database import Base
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, CheckConstraint, UniqueConstraint, Table
-from sqlalchemy.orm import relationship 
+from typing import Optional, List
+from sqlalchemy import Integer, String, Float, ForeignKey, Boolean, CheckConstraint, UniqueConstraint
+from sqlmodel import SQLModel, Field, Relationship
 
-class Gene(Base):
-    __tablename__ = "genes"
+class ExonTranscriptsLink(SQLModel, table=True):
+    __tablename__ = "exons_transcripts"
+    exon_id: Optional[int] = Field(
+        default=None, foreign_key="exons.id", primary_key=True
+    )
+    transcript_id: Optional[int] = Field(
+        default=None, foreign_key="transcripts.id", primary_key=True
+    )
 
-    id = Column(Integer, primary_key=True)
-    ensembl_gene = Column(String, nullable=False, unique=True)
-    chromosome = Column(String, nullable=False)
-    strand = Column(String, CheckConstraint("strand in ('fw', 'rv')"), nullable=False)
-    begin = Column(Integer, nullable=False)
-    end = Column(Integer, nullable=False)    
+class RepeatTranscriptsLink(SQLModel, table=True):
+    __tablename__ = "repeats_transcripts"
+    repeat_id: Optional[int] = Field(
+        default=None, foreign_key="repeats.id", primary_key=True
+    )
+    transcript_id: Optional[int] = Field(
+        default=None, foreign_key="transcripts.id", primary_key=True
+    )
 
-    def __repr__(self):
-        return "Gene(ensembl_gene={}, chromosome={}, strand={}, begin={}, end={})".format(
-            self.ensembl_gene,
-            self.chromosome,
-            self.strand,
-            self.begin,
-            self.end
-        )
+class CRCVariation(SQLModel, table=True):
+    __tablename__ = "crcvariations"
 
-# Association table for the many to many relationship between exons and transcripts
-exons_transcripts = Table("exons_transcripts", Base.metadata,
-    Column("exon_id", ForeignKey("exons.id"), primary_key=True),
-    Column("transcript_id", ForeignKey("transcripts.id"), primary_key=True)
-)
+    id: int = Field(primary_key=True)   
+    tcga_barcode: str = Field(nullable=False)
+    sample_type: str = Field(nullable=False)
+    reference: int = Field(nullable=False)
+    alt: int = Field(nullable=False)
 
-# Association table for the many to many relationship between repeats and transcripts
-repeats_transcripts = Table("repeats_transcripts", Base.metadata,
-    Column("repeat_id", ForeignKey("repeats.id"), primary_key=True),
-    Column("transcript_id", ForeignKey("transcripts.id"), primary_key=True)
-)
-
-class Transcript(Base):
-    __tablename__ = "transcripts"
-
-    id = Column(Integer, primary_key=True)
-    ensembl_transcript = Column(String, nullable=False, unique=True)
-    begin = Column(Integer, nullable=False)
-    end = Column(Integer, nullable=False)
-
-    # one to many Gene -> Transcripts
-    gene_id = Column(Integer, ForeignKey("genes.id"))
-    gene = relationship("Gene", back_populates="transcripts")
-
-    # many to many Exons <-> Transcripts
-    exons = relationship('Exon',
-                            secondary=exons_transcripts,
-                            back_populates='transcripts')
-
-    # # many to many Repeats <-> Transcripts
-    repeats = relationship('Repeat',
-                            secondary=repeats_transcripts,
-                            back_populates='transcripts')
+    # one to many Repeat -> CRCVariation
+    repeat_id: int = Field(foreign_key ="repeats.id")
+    repeat: "Repeat" = Relationship(back_populates="crcvariations")
 
     def __repr__(self):
-        return "Transcript(ensembl_transcript={}, begin={}, end={})".format(
-            self.ensembl_transcript,
-            self.begin,
-            self.end
+        return "CRCVariation(tcga_barcode={}, reference_period={}, period={})".format(
+            self.tcga_barcode,
+            self.reference_period,
+            self.period,
         )
 
-# Add relationship directive to Gene class for one to many Gene -> Transcript
-Gene.transcripts = relationship("Transcript", order_by=Transcript.id, back_populates="gene")
-
-
-class Exon(Base):
-    __tablename__ = "exons"
-
-    id = Column(Integer, primary_key=True)
-    ensembl_exon = Column(String, nullable=False, unique=True)
-    begin = Column(Integer, nullable=False)
-    end = Column(Integer, nullable=False)
-    cds = Column(Boolean, nullable=False)
-    start_codon = Column(Integer)
-    stop_codon = Column(Integer)
-
-    # many to many Exons <-> Transcripts
-    transcripts = relationship('Transcript',
-                            secondary=exons_transcripts,
-                            back_populates='exons')
-
-    def __repr__(self):
-        return "Exon(ensembl_exon={}, begin={}, end={}, cds={}, start_codon={}, stop_codon={})".format(
-            self.ensembl_exon,
-            self.begin,
-            self.end,
-            self.cds,
-            self.start_codon,
-            self.stop_codon
-        )
-
-
-class Repeat(Base):
+class Repeat(SQLModel, table=True):
     __tablename__ = "repeats"
 
-    id = Column(Integer, primary_key=True)   
-    source = Column(String, nullable=True, default="unknown")  # e.g. which detector found this Repeat?
-    msa = Column(String, nullable=True)
-    begin = Column(Integer, nullable=False)
-    end = Column(Integer, nullable=False)
-    l_effective = Column(Integer, nullable=False)
-    n_effective = Column(Integer, nullable=False)
-    region_length = Column(Integer, nullable=False)
-    score_type = Column(String, nullable=False)
-    score = Column(Float, nullable=False)
-    p_value = Column(Float, nullable=False)
-    divergence = Column(Float, nullable=False)
+    id: int = Field(primary_key=True)   
+    source: Optional[str] = Field(default="unknown")# e.g. which detector found this Repeat?
+    msa: str = Field(nullable=True)
+    begin: int = Field(nullable=False)
+    end: int = Field(nullable=False)
+    l_effective: int = Field(nullable=False)
+    n_effective: int = Field(nullable=False)
+    region_length: int = Field(nullable=False)
+    score_type: str = Field(nullable=False)
+    score: float = Field(nullable=False)
+    p_value: float = Field(nullable=False)
+    divergence: float = Field(nullable=False)
 
     # one to many Gene -> Repeats
-    gene_id = Column(Integer, ForeignKey("genes.id"))
-    gene = relationship("Gene", back_populates="repeats")
-
+    gene_id: int = Field(foreign_key = "genes.id")
+    gene: "Gene" = Relationship(back_populates="repeats")
+    # Add relationship directive to Repeat class for one to many Repeat -> CRCVariation
+    crcvariations : List[CRCVariation] = Relationship(back_populates="repeat")
     # many to many Repeats <-> Transcripts
-    transcripts = relationship('Transcript',
-                            secondary=repeats_transcripts,
-                            back_populates='repeats')
+    transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
 
     def __repr__(self):
         return "Repeat(source={}, msa={}, begin={}, end={}, l_effective={}, n_effective={}, region_length={}, score_type={}, score={}, p_value={}, divergence={})".format(
@@ -133,6 +79,82 @@ class Repeat(Base):
             self.divergence
         )
 
-# Add relationship directive to Gene class for one to many Gene -> Repeats
-Gene.repeats = relationship("Repeat", order_by=Repeat.id, back_populates="gene")
+class Transcript(SQLModel, table=True):
+    __tablename__ = "transcripts"
+    __table_args__ = (UniqueConstraint("ensembl_transcript"),)
+    id: int = Field(primary_key=True)
+    ensembl_transcript: str = Field(nullable=False)
+    begin: int = Field(nullable=False)
+    end: int = Field(nullable=False)
+
+    # one to many Gene -> Transcripts
+    gene_id = Field(Integer, foreign_key ="genes.id")
+
+    gene: "Gene" = Relationship(back_populates="transcripts")
+
+    # many to many Exons <-> Transcripts
+    exons: List["Exon"] = Relationship(back_populates="transcripts", link_model = ExonTranscriptsLink)
+
+    # # many to many Repeats <-> Transcripts
+    repeats: List["Repeat"] = Relationship(back_populates="transcripts", link_model = RepeatTranscriptsLink)
+
+    def __repr__(self):
+        return "Transcript(ensembl_transcript={}, begin={}, end={})".format(
+            self.ensembl_transcript,
+            self.begin,
+            self.end
+        )
+
+class Gene(SQLModel, table=True):
+    __tablename__ = "genes"
+    __table_args__ = (UniqueConstraint("ensembl_gene"), CheckConstraint("strand in ('fw', 'rv')"))
+
+    id: int = Field(default=None, primary_key=True)
+    ensembl_gene: str = Field(nullable=False)
+    chromosome: str = Field(nullable=False)
+    strand: str = Field(nullable=False)
+    begin: int = Field(nullable=False)
+    end: int = Field(nullable=False)    
+
+    transcripts: List[Transcript] = Relationship(back_populates="gene")
+    # Add relationship directive to Gene class for one to many Gene -> Repeats
+    repeats: List[Repeat] = Relationship(back_populates="gene")
+
+    def __repr__(self):
+        return "Gene(ensembl_gene={}, chromosome={}, strand={}, begin={}, end={})".format(
+            self.ensembl_gene,
+            self.chromosome,
+            self.strand,
+            self.begin,
+            self.end
+        )
+
+class Exon(SQLModel, table=True):
+    __tablename__ = "exons"
+    __table_args__ = (UniqueConstraint("ensembl_exon"),)
+
+    id: int = Field(default=None, primary_key=True)
+    ensembl_exon: str = Field(nullable=False)
+    begin: int =Field(nullable=False)
+    end: int = Field(nullable=False)
+    cds: bool = Field(nullable=False)
+    start_codon: int = Field(default=None)
+    stop_codon: int = Field(default=None)
+
+    # many to many Exons <-> Transcripts
+    transcripts: List["Transcript"] = Relationship(back_populates="exons", link_model = ExonTranscriptsLink)
+
+    def __repr__(self):
+        return "Exon(ensembl_exon={}, begin={}, end={}, cds={}, start_codon={}, stop_codon={})".format(
+            self.ensembl_exon,
+            self.begin,
+            self.end,
+            self.cds,
+            self.start_codon,
+            self.stop_codon
+        )
+
+
+
+
 

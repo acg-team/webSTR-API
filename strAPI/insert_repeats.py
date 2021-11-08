@@ -5,9 +5,9 @@ import pickle
 
 from tral.repeat_list.repeat_list import RepeatList
 
-from setup_db import Gene, Repeat
+from repeats.models import Gene, Repeat
 from gtf_to_sqlite import connection_setup
-from constants import UPSTREAM, CHROMOSOME_LENGTHS
+from utils.constants import UPSTREAM, CHROMOSOME_LENGTHS
 
 def load_repeatlists(directory, targets=None):
     # collect all pickle files from input directory
@@ -50,11 +50,12 @@ def get_gene_from_repeatlist(session, file_name, upstream=UPSTREAM):
         # also check end + upstream, if > chromosome length, get gene using both begin and end later
         ## if gene_end + promoter > chromosome length, we have to try with only the end position        
         if gene_end == CHROMOSOME_LENGTHS[chromosome]:
-            return session.query(Gene).filter_by(chromosome=chromosome, strand=strand, begin=gene_begin).one()
+            gene = session.query(Gene).filter_by(chromosome=chromosome, strand=strand, begin=gene_begin).one()
+            return gene
         gene_end -= UPSTREAM
     else:
         raise Exception(f"Could not determine strand for repeatlist from file {file_name}")
-    
+   
     return session.query(Gene).filter_by(chromosome=chromosome, strand=strand, begin=gene_begin, end=gene_end).one()
 
 def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
@@ -94,7 +95,8 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
         p_value = repeat.d_pvalue[score_type],
         divergence = repeat.d_divergence[score_type]
     )
-    
+
+
     # relate Repeat to gene
     gene.repeats.append(db_repeat)
 
@@ -130,11 +132,13 @@ def main():
     engine, session = connection_setup(db_path)
 
     for file_name, repeat_list in load_repeatlists(input_path):
-        if not file_name.endswith("_filt.pickle"):
+        if not file_name.endswith(".pickle"):
             continue
         # retrieve the Gene that the repeat_list belongs to
         try:
+            #print(file_name)
             gene = get_gene_from_repeatlist(session, file_name)
+            #print(gene)
         except Exception as e:
             print(file_name)
             print(e)
@@ -143,10 +147,10 @@ def main():
 
         # make db entry for each repeat and add relationships to Gene and Transcripts
         for repeat in repeat_list.repeats:
+            #print("Adding repeats")
             add_repeat(gene, repeat, score_type)
-    
-    # commit to DB
-    session.commit()
+        session.commit()
 
 if __name__ == "__main__":
     main()
+

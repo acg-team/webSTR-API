@@ -18,3 +18,6 @@ starlette>0.14
 unicodedata2==13.0.0.post2
 wincertstore==0.2
 uvicorn>0.9
+alembic>1.7.1
+psycopg2-binary>2.9.1
+sqlmodel>0.0.4

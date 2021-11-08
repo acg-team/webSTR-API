@@ -8,8 +8,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
-from setup_db import Gene, Transcript, Exon
-
+from repeats.models import Gene, Transcript, Exon
 
 def get_genome_annotations(gtf_handle, protein_coding=True):
     """ Parsing and optional filtering of gtf genome annotation file into pd.DataFrame

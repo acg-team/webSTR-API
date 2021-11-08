@@ -2,13 +2,14 @@ from typing import List
 from fastapi.openapi.utils import get_openapi
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 from starlette.responses import RedirectResponse
 
 from .repeats import models, schemas
-from .repeats.database import SessionLocal, engine
+from .repeats.database import get_db, engine
 
-models.Base.metadata.create_all(bind=engine)
+# this is not needed if using alembic
+#models.Base.metadata.create_all(bind=engine)
 
 description = """
 Tral Short Tandem Repeats (STRs) database API 
@@ -66,15 +67,6 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
-
-# Dependency
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
 
 @app.get("/")
 def main():
