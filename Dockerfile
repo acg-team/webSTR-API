@@ -11,7 +11,7 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-ENV DB_CONN="sqlite:///db/example.db"
+#ENV DB_CONN="sqlite:///db/example.db"
 
 EXPOSE 5000
 

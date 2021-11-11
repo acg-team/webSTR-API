@@ -119,10 +119,11 @@ def add_exons(session, gtf_df):
 
 def connection_setup(db_path):
     # check if database exists
-    if not os.path.exists(db_path):
-        raise FileNotFoundError("No DB was found at the specified handle")
+    #if not os.path.exists(db_path):
+    #    raise FileNotFoundError("No DB was found at the specified handle")
     # connect to DB, initialize and configure session
-    engine = create_engine("sqlite:///{}".format(db_path), echo=False)   
+    #engine = create_engine("sqlite:///{}".format(db_path), echo=False)   
+    engine = create_engine(db_path, echo=False) 
     Session = sessionmaker(bind=engine)
     session = Session()
 

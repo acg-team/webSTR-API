@@ -1,6 +1,6 @@
 #!/bin/bash
 
-db=/home/oxana/projects/str_database/db/str.db
+db=postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/postgres
 
 echo "Setting up database file"
 

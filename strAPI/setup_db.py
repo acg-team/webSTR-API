@@ -21,10 +21,10 @@ def main():
     args = cla_parser()
     db_handle = args.database
 
-    if os.path.exists(db_handle):
-        raise FileExistsError("A database already exists at specified handle, exiting!")
+    #if os.path.exists(db_handle):
+    #    raise FileExistsError("A database already exists at specified handle, exiting!")
 
-    engine = create_engine("sqlite:///{}".format(db_handle), echo=True)
+    engine = create_engine(db_handle, echo=True)
     SQLModel.metadata.create_all(engine)
 
 if __name__ == "__main__":
