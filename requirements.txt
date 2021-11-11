@@ -20,4 +20,4 @@ wincertstore==0.2
 uvicorn>0.9
 alembic>1.7.1
 psycopg2-binary>2.9
-sqlmodel>0.0.4
+sqlmodel==0.0.4
