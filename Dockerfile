@@ -11,8 +11,6 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-#ENV DB_CONN="sqlite:///db/example.db"
-
 EXPOSE 5000
 
 CMD uvicorn strAPI.main:app --host=0.0.0.0 --port=${PORT:-5000}

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-db=postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/postgres
+#change password to yours before running
+db=postgresql+psycopg2://postgres:password@localhost:5432/postgres
 
 echo "Setting up database file"
 
