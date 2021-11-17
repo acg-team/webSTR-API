@@ -72,10 +72,10 @@ app.add_middleware(
 def main():
     return RedirectResponse(url="/docs/")
 
-# Return all genes
+# Get 100 genes (testing query)
 @app.get("/genes/", response_model=List[schemas.Gene], tags=["Genes"])
 def show_genes(db: Session = Depends(get_db)):
-    genes = db.query(models.Gene).all()
+    genes = db.query(models.Gene).limit(100).all()
     return genes
 
 """ 
@@ -91,6 +91,7 @@ Retrieve all repeats associated with a given gene
 @app.get("/repeats/", response_model=List[schemas.Repeat], tags=["Repeats"])
 def show_repeats(gene: str, db: Session = Depends(get_db)):
     gene_obj =  db.query(models.Gene).filter_by(ensembl_gene=gene).one()
+    print(db.query(models.Gene).filter_by(ensembl_gene=gene))
     repeats = db.query(models.Repeat).filter_by(gene_id = gene_obj.id).all()
     return repeats
 
