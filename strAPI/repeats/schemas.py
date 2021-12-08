@@ -9,8 +9,8 @@ class Gene(BaseModel):
     strand: str
     start: int
     end: int
-    name: str
-    description: str
+    name: Optional[str]
+    description: Optional[str]
 
     class Config:
         orm_mode = True

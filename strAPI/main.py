@@ -123,7 +123,7 @@ def get_sorted_exons(transcript: str, protein: bool = False, db: Session = Depen
             continue
         exons.append(exon)
 
-    if transcript_obj.gene.strand == "fw":
+    if transcript_obj.gene.strand == "+":
         return list(sorted(exons, key=lambda x : x.start))
-    elif transcript_obj.gene.strand == "rv":
+    elif transcript_obj.gene.strand == "-":
         return list(sorted(exons, key=lambda x : x.start, reverse=True))
