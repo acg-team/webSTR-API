@@ -6,7 +6,7 @@ import pickle
 from tral.repeat_list.repeat_list import RepeatList
 
 from repeats.models import Gene, Repeat
-from gtf_to_sqlite import connection_setup
+from gtf_to_sql import connection_setup
 from utils.constants import UPSTREAM, CHROMOSOME_LENGTHS
 
 def load_repeatlists(directory, targets=None):
@@ -31,50 +31,50 @@ def load_repeatlists(directory, targets=None):
         yield(file_name, repeat_list)
 
 def get_gene_from_repeatlist(session, file_name, upstream=UPSTREAM):
-    chromosome = file_name.split("_")[0]
-    if not chromosome.startswith("chr"):
-        raise Exception(f"Could not determine chromosome for repeatlist from {file_name}")
+    chr = file_name.split("_")[0]
+    if not chr.startswith("chr"):
+        raise Exception(f"Could not determine chr for repeatlist from {file_name}")
 
-    gene_begin = int(file_name.split("_")[1].split("-")[0])
+    gene_start = int(file_name.split("_")[1].split("-")[0])
     gene_end = int(file_name.split("_")[1].split("-")[1])
 
     if "_fw" in file_name:
-        strand = "fw"
-        # also check begin - upstream, if > 1, get gene using both begin and end later
+        strand = "+"
+        # also check start - upstream, if > 1, get gene using both start and end later
         ## if < 1, we have to try with only the end position        
-        if gene_begin < 1:
-            return session.query(Gene).filter_by(chromosome=chromosome, strand=strand, end=gene_end).one()        
-        gene_begin += UPSTREAM
+        if gene_start < 1:
+            return session.query(Gene).filter_by(chr=chr, strand=strand, end=gene_end).one()        
+        gene_start += UPSTREAM
     elif "_rv" in file_name:
-        strand = "rv"
-        # also check end + upstream, if > chromosome length, get gene using both begin and end later
-        ## if gene_end + promoter > chromosome length, we have to try with only the end position        
-        if gene_end == CHROMOSOME_LENGTHS[chromosome]:
-            gene = session.query(Gene).filter_by(chromosome=chromosome, strand=strand, begin=gene_begin).one()
+        strand = "-"
+        # also check end + upstream, if > chr length, get gene using both start and end later
+        ## if gene_end + promoter > chr length, we have to try with only the end position        
+        if gene_end == CHROMOSOME_LENGTHS[chr]:
+            gene = session.query(Gene).filter_by(chr=chr, strand=strand, start=gene_start).one()
             return gene
         gene_end -= UPSTREAM
     else:
         raise Exception(f"Could not determine strand for repeatlist from file {file_name}")
    
-    return session.query(Gene).filter_by(chromosome=chromosome, strand=strand, begin=gene_begin, end=gene_end).one()
+    return session.query(Gene).filter_by(chr=chr, strand=strand, start=gene_start, end=gene_end).one()
 
 def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
     # repeat contains coordinates relative to the extracted genomic region that it was detected in.
     ## Thus, need to remap to chromosomal coordinates before adding to DB
-    if gene.strand == "fw":
-        region_begin = gene.begin - upstream
-        if region_begin < 1:
-            # The begin of the gene was closer to the start of the chromosome than the number of bases
-            ## that were included as upstream 'promoter' region. Thus, the negative region begin value is
+    if gene.strand == "+":
+        region_start = gene.start - upstream
+        if region_start < 1:
+            # The start of the gene was closer to the start of the chr than the number of bases
+            ## that were included as upstream 'promoter' region. Thus, the negative region start value is
             ### reset to 1
-            region_begin = 1
-        chrom_begin = region_begin + repeat.begin - 1 # only valid for fw strand genes
+            region_start = 1
+        chrom_start = region_start + repeat.begin - 1 # only valid for fw strand genes
     else:
         region_end = gene.end + upstream
-        if region_end > CHROMOSOME_LENGTHS[gene.chromosome]:
-            region_end = CHROMOSOME_LENGTHS[gene.chromosome]          
+        if region_end > CHROMOSOME_LENGTHS[gene.chr]:
+            region_end = CHROMOSOME_LENGTHS[gene.chr]          
         repeat_end = repeat.begin + repeat.repeat_region_length - 1 
-        chrom_begin = region_end - repeat_end + 1 # only valid for rv strand genes
+        chrom_start = region_end - repeat_end + 1 # only valid for rv strand genes
     
     # Repeats where gappy units have been trimmed no longer have a '.TRD' attribute, set this to None
     ## in this case so it will show up as NULL in DB (or as unknown)
@@ -85,8 +85,8 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
     db_repeat = Repeat(
         source = repeat.TRD,
         msa = ",".join(repeat.msa), # convert msa from list() to ',' separated str()
-        begin = chrom_begin,
-        end = chrom_begin + repeat.repeat_region_length - 1, # calculate end position
+        start = chrom_start,
+        end = chrom_start + repeat.repeat_region_length - 1, # calculate end position
         l_effective = repeat.l_effective,
         n_effective = repeat.n_effective,
         region_length = repeat.repeat_region_length,
@@ -102,9 +102,9 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
 
     # relate Repeat to all Transcript(s) of the Gene where (partial) overlap exists
     for transcript in gene.transcripts:
-        if db_repeat.begin >= transcript.begin and db_repeat.begin <= transcript.end:
+        if db_repeat.start >= transcript.start and db_repeat.start <= transcript.end:
             transcript.repeats.append(db_repeat)
-        elif db_repeat.end <= transcript.end and db_repeat.end >= transcript.begin:
+        elif db_repeat.end <= transcript.end and db_repeat.end >= transcript.start:
             transcript.repeats.append(db_repeat)
 
 def cla_parser():

@@ -90,8 +90,8 @@ Retrieve all repeats associated with a given gene
 """
 @app.get("/repeats/", response_model=List[schemas.Repeat], tags=["Repeats"])
 def show_repeats(gene: str, db: Session = Depends(get_db)):
-    gene_obj =  db.query(models.Gene).filter_by(ensembl_gene=gene).one()
-    print(db.query(models.Gene).filter_by(ensembl_gene=gene))
+    gene_obj =  db.query(models.Gene).filter_by(ensembl_id=gene).one()
+    print(db.query(models.Gene).filter_by(ensembl_id=gene))
     repeats = db.query(models.Repeat).filter_by(gene_id = gene_obj.id).all()
     return repeats
 
@@ -124,6 +124,6 @@ def get_sorted_exons(transcript: str, protein: bool = False, db: Session = Depen
         exons.append(exon)
 
     if transcript_obj.gene.strand == "fw":
-        return list(sorted(exons, key=lambda x : x.begin))
+        return list(sorted(exons, key=lambda x : x.start))
     elif transcript_obj.gene.strand == "rv":
-        return list(sorted(exons, key=lambda x : x.begin, reverse=True))
+        return list(sorted(exons, key=lambda x : x.start, reverse=True))

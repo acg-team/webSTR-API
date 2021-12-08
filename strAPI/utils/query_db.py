@@ -29,9 +29,9 @@ def get_sorted_exons(session, transcript, protein_coding=False):
         exons.append(exon)
 
     if transcript.gene.strand == "fw":
-        return list(sorted(exons, key=lambda x : x.begin))
+        return list(sorted(exons, key=lambda x : x.start))
     elif transcript.gene.strand == "rv":
-        return list(sorted(exons, key=lambda x : x.begin, reverse=True))
+        return list(sorted(exons, key=lambda x : x.start, reverse=True))
 
 
 def main():

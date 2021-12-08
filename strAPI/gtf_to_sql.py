@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 import argparse
 import os
-
+import io
+import pandas as pd
+import urllib.parse
+import urllib.request
 import gtfparse
 from sqlalchemy import Index
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
-
+import mygene
 from repeats.models import Gene, Transcript, Exon
 
 def get_genome_annotations(gtf_handle, protein_coding=True):
@@ -33,20 +36,30 @@ def add_genes(session, gtf_df):
                     using gtfparse.read_gtf()
     """
     gene_list = []
+    mg = mygene.MyGeneInfo()
     for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
+        ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
+
+        try:
+            gene_info = mg.getgene(ensembl_id, fields="name, symbol, entrezgene")
+        except:
+            gene_info =  {
+                "symbol": None,
+                "name": None,
+                "entrezgene": None,
+            }
         gene = Gene(
-                ensembl_gene = row["gene_id"],
-                chromosome = row["seqname"],
-                begin = row["start"],
-                end = row["end"]
+                ensembl_id = ensembl_id,
+                ensembl_version_id = row["gene_id"],
+                entrez_id = gene_info["entrezgene"],
+                name = gene_info["symbol"],
+                description = gene_info["name"],
+                chr = row["seqname"],
+                start = row["start"],
+                end = row["end"],
+                strand = row["strand"]
             )
-        # Strands are listed as '+' and '-' in gtf files
-        if row["strand"] == "+":
-            gene.strand = "fw"
-        elif row["strand"] == "-":
-            gene.strand = "rv"
-        else:
-            raise ValueError("Unknown strand identifier encountered, gtf indexes may be off")
+       
         gene_list.append(gene)
 
     session.add_all(gene_list)
@@ -63,12 +76,12 @@ def add_transcripts(session, gtf_df):
                     using gtfparse.read_gtf()
     """
     for index, row in gtf_df.loc[(gtf_df["feature"] == "transcript")].iterrows():     
-        ensembl_gene = row["gene_id"]
-        gene = session.query(Gene).filter_by(ensembl_gene = ensembl_gene).one()
+        ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
+        gene = session.query(Gene).filter_by(ensembl_id = ensembl_id).one()
         gene.transcripts.append(
             Transcript(
                 ensembl_transcript=row["transcript_id"],
-                begin=row["start"],
+                start=row["start"],
                 end=row["end"]
             )
         )
@@ -102,7 +115,7 @@ def add_exons(session, gtf_df):
                 skip = True
             except NoResultFound:
                 # Exon was not observed before, make new Exon and parse feature information from the next few rows in the file
-                new_exon = Exon(ensembl_exon=row["exon_id"], begin=row["start"], end=row["end"], cds=False)            
+                new_exon = Exon(ensembl_exon=row["exon_id"], start=row["start"], end=row["end"], cds=False)            
                 transcript.exons.append(new_exon)
 
         elif row["feature"] == "CDS" and not skip:
@@ -167,7 +180,7 @@ def main():
 
     # add indexes to row that will likely be queried a lot
     # ensembl ID columns for Gene, Transcript, Exon
-    Index('ensembl_gene_idx', Gene.ensembl_gene).create(engine)
+    Index('ensembl_id_idx', Gene.ensembl_id).create(engine)
     Index('ensembl_transcript_idx', Transcript.ensembl_transcript).create(engine)
     Index('ensembl_exon_idx', Exon.ensembl_exon).create(engine)
 

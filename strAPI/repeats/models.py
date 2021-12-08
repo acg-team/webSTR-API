@@ -46,7 +46,7 @@ class Repeat(SQLModel, table=True):
     id: int = Field(primary_key=True)   
     source: Optional[str] = Field(default="unknown")# e.g. which detector found this Repeat?
     msa: str = Field(nullable=True)
-    begin: int = Field(nullable=False)
+    start: int = Field(nullable=False)
     end: int = Field(nullable=False)
     l_effective: int = Field(nullable=False)
     n_effective: int = Field(nullable=False)
@@ -65,10 +65,10 @@ class Repeat(SQLModel, table=True):
     transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
 
     def __repr__(self):
-        return "Repeat(source={}, msa={}, begin={}, end={}, l_effective={}, n_effective={}, region_length={}, score_type={}, score={}, p_value={}, divergence={})".format(
+        return "Repeat(source={}, msa={}, start={}, end={}, l_effective={}, n_effective={}, region_length={}, score_type={}, score={}, p_value={}, divergence={})".format(
             self.source,
             self.msa,
-            self.begin,
+            self.start,
             self.end,
             self.l_effective,
             self.n_effective,
@@ -84,7 +84,7 @@ class Transcript(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("ensembl_transcript"),)
     id: int = Field(primary_key=True)
     ensembl_transcript: str = Field(nullable=False)
-    begin: int = Field(nullable=False)
+    start: int = Field(nullable=False)
     end: int = Field(nullable=False)
 
     # one to many Gene -> Transcripts
@@ -99,21 +99,25 @@ class Transcript(SQLModel, table=True):
     repeats: List["Repeat"] = Relationship(back_populates="transcripts", link_model = RepeatTranscriptsLink)
 
     def __repr__(self):
-        return "Transcript(ensembl_transcript={}, begin={}, end={})".format(
+        return "Transcript(ensembl_transcript={}, start={}, end={})".format(
             self.ensembl_transcript,
-            self.begin,
+            self.start,
             self.end
         )
 
 class Gene(SQLModel, table=True):
     __tablename__ = "genes"
-    __table_args__ = (UniqueConstraint("ensembl_gene"), CheckConstraint("strand in ('fw', 'rv')"))
+    __table_args__ = (UniqueConstraint("ensembl_version_id"), CheckConstraint("strand in ('+', '-')"))
 
     id: int = Field(default=None, primary_key=True)
-    ensembl_gene: str = Field(nullable=False)
-    chromosome: str = Field(nullable=False)
+    ensembl_id: str = Field(nullable=False)
+    ensembl_version_id: str = Field(nullable=False)
+    entrez_id: Optional[str] = Field(default=None)
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    chr: str = Field(nullable=False)
     strand: str = Field(nullable=False)
-    begin: int = Field(nullable=False)
+    start: int = Field(nullable=False)
     end: int = Field(nullable=False)    
 
     transcripts: List[Transcript] = Relationship(back_populates="gene")
@@ -121,12 +125,15 @@ class Gene(SQLModel, table=True):
     repeats: List[Repeat] = Relationship(back_populates="gene")
 
     def __repr__(self):
-        return "Gene(ensembl_gene={}, chromosome={}, strand={}, begin={}, end={})".format(
-            self.ensembl_gene,
-            self.chromosome,
+        return "Gene(ensembl_id={}, chr={}, strand={}, start={}, end={}, name={}, description={}, entrez_id={}, uniprot_id={})".format(
+            self.ensembl_id,
+            self.chr,
             self.strand,
-            self.begin,
-            self.end
+            self.start,
+            self.end,
+            self.name,
+            self.description,
+            self.entrez_id
         )
 
 class Exon(SQLModel, table=True):
@@ -135,7 +142,7 @@ class Exon(SQLModel, table=True):
 
     id: int = Field(default=None, primary_key=True)
     ensembl_exon: str = Field(nullable=False)
-    begin: int =Field(nullable=False)
+    start: int =Field(nullable=False)
     end: int = Field(nullable=False)
     cds: bool = Field(nullable=False)
     start_codon: int = Field(default=None)
@@ -145,9 +152,9 @@ class Exon(SQLModel, table=True):
     transcripts: List["Transcript"] = Relationship(back_populates="exons", link_model = ExonTranscriptsLink)
 
     def __repr__(self):
-        return "Exon(ensembl_exon={}, begin={}, end={}, cds={}, start_codon={}, stop_codon={})".format(
+        return "Exon(ensembl_exon={}, start={}, end={}, cds={}, start_codon={}, stop_codon={})".format(
             self.ensembl_exon,
-            self.begin,
+            self.start,
             self.end,
             self.cds,
             self.start_codon,

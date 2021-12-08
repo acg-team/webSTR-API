@@ -4,20 +4,25 @@ from pydantic import BaseModel
 
 
 class Gene(BaseModel):
-    ensembl_gene: str
-    chromosome: str
+    ensembl_id: str
+    chr: str
     strand: str
-    begin: int
+    start: int
     end: int
+    name: str
+    description: str
 
     class Config:
         orm_mode = True
 
 
 class Repeat(BaseModel):
-    begin: int
+    start: int
     end: int 
     msa: str
+    l_effective: int
+    n_effective: int
+    divergence: float
     p_value: float
 
     class Config:
@@ -25,7 +30,7 @@ class Repeat(BaseModel):
 
 
 class Transcript(BaseModel):
-    begin: int
+    start: int
     end: int 
     ensembl_transcript: str 
 
@@ -34,7 +39,7 @@ class Transcript(BaseModel):
 
 class Exon(BaseModel):
     ensembl_exon : str
-    begin : int
+    start : int
     end : int
     cds : bool
     start_codon : Optional[int]

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 #change password to yours before running
-db=postgresql+psycopg2://postgres:password@localhost:5432/postgres
+db=postgresql+psycopg2://postgres:password@localhost:5432/strdb
 
 echo "Setting up database file"
 
 python3 setup_db.py --database $db
 
 echo "Adding genes"
-python3 gtf_to_sqlite.py --gtf /home/oxana/projects/str_database/data/genome_anntotation/gencode.v22.annotation.gtf -d $db
+python3 gtf_to_sql.py --gtf /home/oxana/projects/str_database/data/genome_anntotation/gencode.v22.annotation.gtf -d $db
 
 for i in {1..25..1}
     do
