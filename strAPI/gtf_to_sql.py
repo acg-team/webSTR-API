@@ -7,6 +7,7 @@ import urllib.parse
 import urllib.request
 import gtfparse
 from sqlalchemy import Index
+from sqlalchemy import exc
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
@@ -40,14 +41,28 @@ def add_genes(session, gtf_df):
     for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
         ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
 
-        try:
-            gene_info = mg.getgene(ensembl_id, fields="name, symbol, entrezgene")
-        except:
+        # some genes ( e.g. ENSG00000279928) do not have 'entrezgene' field. This key will then not exists in the
+        # gene_info dict and trying to access gene_info['entrezgene'] during Gene creation causes KeyError
+        query_fields = ["name", "symbol", "entrezgene"]
+        gene_info = mg.getgene(ensembl_id, fields=", ".join(query_fields))
+        
+        # gene_info will be None if no entry is found 
+        if gene_info:
+            # Need to check each for each key if it exists in the gene_info dict. 
+            # If not: create it and set to None
+            for field in query_fields:
+                try:
+                    gene_info[field]
+                except KeyError:
+                    gene_info[field] = None
+        else:
+            # create placeholder dict if gene_info is None
             gene_info =  {
                 "symbol": None,
                 "name": None,
                 "entrezgene": None,
             }
+
         gene = Gene(
                 ensembl_id = ensembl_id,
                 ensembl_version_id = row["gene_id"],
@@ -159,6 +174,9 @@ def main():
     args = cla_parser()
     db_path = args.database
     gtf_handle = args.gtf
+
+    # db_path="sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
+    # gtf_handle="/Users/maxverbiest/PhD/projects/str_database/data/genome_anntotation/gencode_small_brca2_M.gtf"
     
     # check if gtf file exists
     if not os.path.exists(gtf_handle):

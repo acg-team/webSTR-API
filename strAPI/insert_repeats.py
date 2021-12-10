@@ -30,54 +30,24 @@ def load_repeatlists(directory, targets=None):
 
         yield(file_name, repeat_list)
 
-def get_gene_from_repeatlist(session, file_name, upstream=UPSTREAM):
-    chr = file_name.split("_")[0]
-    if not chr.startswith("chr"):
-        raise Exception(f"Could not determine chr for repeatlist from {file_name}")
+def repeat_in_element(repeat, element, upstream=None):
+    region_start, region_end = element.start, element.end
+    if upstream:
+        if not isinstance(element, Gene):
+            raise NotImplementedError("Including upstream region is currently only supported for Gene database entries")
+        if element.strand == "+":
+            region_start = max(region_start - UPSTREAM, 1)
+        else:
+            region_end = min(region_end + UPSTREAM, CHROMOSOME_LENGTHS[element.chr])
 
-    gene_start = int(file_name.split("_")[1].split("-")[0])
-    gene_end = int(file_name.split("_")[1].split("-")[1])
+    repeat_end = repeat.begin + repeat.repeat_region_length - 1
+    if region_start <= repeat.begin <= region_end:
+        return True
+    if region_start <= repeat_end <= region_end:
+        return True
+    return False
 
-    if "_fw" in file_name:
-        strand = "+"
-        # also check start - upstream, if > 1, get gene using both start and end later
-        ## if < 1, we have to try with only the end position        
-        if gene_start < 1:
-            return session.query(Gene).filter_by(chr=chr, strand=strand, end=gene_end).one()        
-        gene_start += UPSTREAM
-    elif "_rv" in file_name:
-        strand = "-"
-        # also check end + upstream, if > chr length, get gene using both start and end later
-        ## if gene_end + promoter > chr length, we have to try with only the end position        
-        if gene_end == CHROMOSOME_LENGTHS[chr]:
-            gene = session.query(Gene).filter_by(chr=chr, strand=strand, start=gene_start).one()
-            return gene
-        gene_end -= UPSTREAM
-    else:
-        raise Exception(f"Could not determine strand for repeatlist from file {file_name}")
-   
-    return session.query(Gene).filter_by(chr=chr, strand=strand, start=gene_start, end=gene_end).one()
-
-def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
-    # repeat contains coordinates relative to the extracted genomic region that it was detected in.
-    ## Thus, need to remap to chromosomal coordinates before adding to DB
-    if gene.strand == "+":
-        region_start = gene.start - upstream
-        if region_start < 1:
-            # The start of the gene was closer to the start of the chr than the number of bases
-            ## that were included as upstream 'promoter' region. Thus, the negative region start value is
-            ### reset to 1
-            region_start = 1
-        chrom_start = region_start + repeat.begin - 1 # only valid for fw strand genes
-    else:
-        region_end = gene.end + upstream
-        if region_end > CHROMOSOME_LENGTHS[gene.chr]:
-            region_end = CHROMOSOME_LENGTHS[gene.chr]          
-        repeat_end = repeat.begin + repeat.repeat_region_length - 1 
-        chrom_start = region_end - repeat_end + 1 # only valid for rv strand genes
-    
-    # Repeats where gappy units have been trimmed no longer have a '.TRD' attribute, set this to None
-    ## in this case so it will show up as NULL in DB (or as unknown)
+def make_db_repeat(repeat, score_type):
     if not hasattr(repeat, "TRD"):
         repeat.TRD = None
 
@@ -85,8 +55,8 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
     db_repeat = Repeat(
         source = repeat.TRD,
         msa = ",".join(repeat.msa), # convert msa from list() to ',' separated str()
-        start = chrom_start,
-        end = chrom_start + repeat.repeat_region_length - 1, # calculate end position
+        start = repeat.begin,
+        end = repeat.begin + repeat.repeat_region_length - 1, # calculate end position
         l_effective = repeat.l_effective,
         n_effective = repeat.n_effective,
         region_length = repeat.repeat_region_length,
@@ -96,16 +66,7 @@ def add_repeat(gene, repeat, score_type, upstream=UPSTREAM):
         divergence = repeat.d_divergence[score_type]
     )
 
-
-    # relate Repeat to gene
-    gene.repeats.append(db_repeat)
-
-    # relate Repeat to all Transcript(s) of the Gene where (partial) overlap exists
-    for transcript in gene.transcripts:
-        if db_repeat.start >= transcript.start and db_repeat.start <= transcript.end:
-            transcript.repeats.append(db_repeat)
-        elif db_repeat.end <= transcript.end and db_repeat.end >= transcript.start:
-            transcript.repeats.append(db_repeat)
+    return db_repeat
 
 def cla_parser():
     parser = argparse.ArgumentParser()
@@ -131,26 +92,33 @@ def main():
     
     engine, session = connection_setup(db_path)
 
-    for file_name, repeat_list in load_repeatlists(input_path):
-        if not file_name.endswith(".pickle"):
-            continue
-        # retrieve the Gene that the repeat_list belongs to
+    # Collect all genes from DB into dictionary (chromosomes as keys)
+    gene_dict = dict()
+    for gene in session.query(Gene).all():
         try:
-            #print(file_name)
-            gene = get_gene_from_repeatlist(session, file_name)
-            #print(gene)
-        except Exception as e:
-            print(file_name)
-            print(e)
-            exit(1)
-            
+            gene_dict[gene.chr].append(gene)
+        except KeyError:
+            gene_dict[gene.chr] = [gene]
 
-        # make db entry for each repeat and add relationships to Gene and Transcripts
+    for file_name, repeat_list in load_repeatlists(input_path):
+        repeat_chrom = file_name.split("_")[0]
         for repeat in repeat_list.repeats:
-            #print("Adding repeats")
-            add_repeat(gene, repeat, score_type)
-        session.commit()
+            gene_count = 0            
+            for gene in gene_dict[repeat_chrom]:                
+                if repeat_in_element(repeat=repeat, element=gene, upstream=UPSTREAM):
+                    # The repeat could be mapped to a gene, check if this is the first 
+                    # time the repeat maps to a gene (gene_count == 1), if so: make DB entry for repeat
+                    gene_count += 1              
+                    if gene_count == 1:                        
+                        db_repeat = make_db_repeat(repeat, score_type)                                    
+                    gene.repeats.append(db_repeat)
+                    for transcript in gene.transcripts:
+                        # Add repeat to all of the genes transcripts that it maps to
+                        if repeat_in_element(repeat=repeat, element=transcript):
+                            transcript.repeats.append(db_repeat)
+            if gene_count == 0:
+                print(f"WARNING: repeat {repeat} could not be mapped to any of the genes in the database")
+    session.commit()
 
 if __name__ == "__main__":
     main()
-

@@ -16,7 +16,7 @@ def cla_parser():
     return parser.parse_args()
 
 def main():
-    # db_handle = "/cfs/earth/scratch/verb/projects/CRC_STRs/results/test/db/test.db"
+    # db_handle = "sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
 
     args = cla_parser()
     db_handle = args.database
