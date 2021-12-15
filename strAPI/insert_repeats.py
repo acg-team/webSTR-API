@@ -101,6 +101,7 @@ def main():
             gene_dict[gene.chr] = [gene]
 
     for file_name, repeat_list in load_repeatlists(input_path):
+        print(f"Inserting repeats from file '{file_name}'")
         repeat_chrom = file_name.split("_")[0]
         for repeat in repeat_list.repeats:
             gene_count = 0            

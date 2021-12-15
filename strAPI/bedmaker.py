@@ -4,7 +4,7 @@ from collections import Counter
 
 import numpy as np
 
-from setup_db import Gene, Repeat
+from setup_db import Gene
 from gtf_to_sql import connection_setup
 
 class BedMaker(object):      
@@ -53,7 +53,7 @@ class BedMaker(object):
         self.gene_selection = gene_selection
 
     def threshold_filter(self):
-        """ Generator function that yields repeats containing a sequence of consecutive 
+        """ Generator function that yields repeats containing a subsequence of consecutive 
         perfect units longer than the predefined thresholds in self.thresholds
 
         Returns
@@ -70,12 +70,8 @@ class BedMaker(object):
                 seen_repeats.add(repeat.id)
                 bed_tr_list = self.get_bed_trs(repeat, gene.chr)
                 for bed_tr in bed_tr_list:
-                    if self.consensus_only:
-                        bed_tr_len = bed_tr.longest_cs
-                    else:
-                        bed_tr_len = len(bed_tr.units)
-                    try:                                                         
-                        if bed_tr_len >= self.thresholds[len(bed_tr.consensus_unit)]:
+                    try:  
+                        if bed_tr.longest_cs >= self.thresholds[len(bed_tr.consensus_unit)]:
                             yield bed_tr
                     except KeyError:
                         # repeat.l_effective is not part of the self.threshold range currently active
