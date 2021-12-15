@@ -7,6 +7,7 @@ import urllib.parse
 import urllib.request
 import gtfparse
 from sqlalchemy import Index
+from sqlalchemy import exc
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
@@ -36,18 +37,11 @@ def add_genes(session, gtf_df):
                     using gtfparse.read_gtf()
     """
     gene_list = []
-    mg = mygene.MyGeneInfo()
+    gene_infos = query_gene_info(gtf_df)
     for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
         ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
+        gene_info = gene_infos[ensembl_id]
 
-        try:
-            gene_info = mg.getgene(ensembl_id, fields="name, symbol, entrezgene")
-        except:
-            gene_info =  {
-                "symbol": None,
-                "name": None,
-                "entrezgene": None,
-            }
         gene = Gene(
                 ensembl_id = ensembl_id,
                 ensembl_version_id = row["gene_id"],
@@ -63,6 +57,37 @@ def add_genes(session, gtf_df):
         gene_list.append(gene)
 
     session.add_all(gene_list)
+
+def query_gene_info(gtf_df, query_fields=["name", "symbol", "entrezgene"]):    
+    ensembl_ids = set()
+    for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
+        ensembl_ids.add(row["gene_id"].split(".")[0])
+    response = mygene.MyGeneInfo().getgenes(ensembl_ids, fields=",".join(query_fields))
+    
+    gene_infos = dict()
+    not_found_counter = 0
+    for result in response:
+        try:
+            # create placeholder dict if no info was found
+            if result['notfound']:
+                gene_infos[result['query']] = {                    
+                    "symbol": None,
+                    "name": None,
+                    "entrezgene": None,
+                }
+                not_found_counter += 1
+                continue
+        except KeyError:
+            # something was found, but need to check for each field whether it was found or not
+            # otherwise they will be missing and KeyErrors will be raised later on
+            for field in query_fields:
+                    try:
+                        result[field]
+                    except KeyError:
+                        result[field] = None
+        gene_infos[result['query']] = result
+    print(f"No gene information could be found for {not_found_counter} out of {len(ensembl_ids)} genes")
+    return gene_infos
 
 def add_transcripts(session, gtf_df):
     """ Get desired field values for all transcripts from a gtf data frame, add them to their respective
@@ -159,6 +184,9 @@ def main():
     args = cla_parser()
     db_path = args.database
     gtf_handle = args.gtf
+
+    # db_path="sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
+    # gtf_handle="/Users/maxverbiest/PhD/projects/str_database/data/genome_anntotation/gencode_small_brca2_M.gtf"
     
     # check if gtf file exists
     if not os.path.exists(gtf_handle):
