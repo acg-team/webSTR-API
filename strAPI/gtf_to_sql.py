@@ -37,31 +37,10 @@ def add_genes(session, gtf_df):
                     using gtfparse.read_gtf()
     """
     gene_list = []
-    mg = mygene.MyGeneInfo()
+    gene_infos = query_gene_info(gtf_df)
     for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
         ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
-
-        # some genes ( e.g. ENSG00000279928) do not have 'entrezgene' field. This key will then not exists in the
-        # gene_info dict and trying to access gene_info['entrezgene'] during Gene creation causes KeyError
-        query_fields = ["name", "symbol", "entrezgene"]
-        gene_info = mg.getgene(ensembl_id, fields=", ".join(query_fields))
-        
-        # gene_info will be None if no entry is found 
-        if gene_info:
-            # Need to check each for each key if it exists in the gene_info dict. 
-            # If not: create it and set to None
-            for field in query_fields:
-                try:
-                    gene_info[field]
-                except KeyError:
-                    gene_info[field] = None
-        else:
-            # create placeholder dict if gene_info is None
-            gene_info =  {
-                "symbol": None,
-                "name": None,
-                "entrezgene": None,
-            }
+        gene_info = gene_infos[ensembl_id]
 
         gene = Gene(
                 ensembl_id = ensembl_id,
@@ -78,6 +57,37 @@ def add_genes(session, gtf_df):
         gene_list.append(gene)
 
     session.add_all(gene_list)
+
+def query_gene_info(gtf_df, query_fields=["name", "symbol", "entrezgene"]):    
+    ensembl_ids = set()
+    for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
+        ensembl_ids.add(row["gene_id"].split(".")[0])
+    response = mygene.MyGeneInfo().getgenes(ensembl_ids, fields=",".join(query_fields))
+    
+    gene_infos = dict()
+    not_found_counter = 0
+    for result in response:
+        try:
+            # create placeholder dict if no info was found
+            if result['notfound']:
+                gene_infos[result['query']] = {                    
+                    "symbol": None,
+                    "name": None,
+                    "entrezgene": None,
+                }
+                not_found_counter += 1
+                continue
+        except KeyError:
+            # something was found, but need to check for each field whether it was found or not
+            # otherwise they will be missing and KeyErrors will be raised later on
+            for field in query_fields:
+                    try:
+                        result[field]
+                    except KeyError:
+                        result[field] = None
+        gene_infos[result['query']] = result
+    print(f"No gene information could be found for {not_found_counter} out of {len(ensembl_ids)} genes")
+    return gene_infos
 
 def add_transcripts(session, gtf_df):
     """ Get desired field values for all transcripts from a gtf data frame, add them to their respective
