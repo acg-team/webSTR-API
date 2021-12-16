@@ -91,8 +91,11 @@ Retrieve all repeats associated with a given gene
 @app.get("/repeats/", response_model=List[schemas.Repeat], tags=["Repeats"])
 def show_repeats(gene: str, db: Session = Depends(get_db)):
     gene_obj =  db.query(models.Gene).filter_by(ensembl_id=gene).one()
-    print(db.query(models.Gene).filter_by(ensembl_id=gene))
-    repeats = db.query(models.Repeat).filter_by(gene_id = gene_obj.id).all()
+
+    repeats = db.query(models.Repeat).filter(models.Repeat.genes.any(
+                models.GenesRepeatsLink.gene_id == gene_obj.id)).all()
+    print(len(repeats))
+   
     return repeats
 
 
