@@ -32,7 +32,9 @@ class GenesRepeatsLink(SQLModel, table=True):
 class CRCVariation(SQLModel, table=True):
     __tablename__ = "crcvariations"
 
-    id: int = Field(primary_key=True)   
+    id: int = Field(primary_key=True)
+    start: int = Field(nullable=False)
+    end: int = Field(nullable=False)   
     tcga_barcode: str = Field(nullable=False)
     sample_type: str = Field(nullable=False)
     reference: int = Field(nullable=False)
@@ -47,6 +49,8 @@ class CRCVariation(SQLModel, table=True):
             self.tcga_barcode,
             self.reference_period,
             self.period,
+            self.start,
+            self.end
         )
 
 class Repeat(SQLModel, table=True):

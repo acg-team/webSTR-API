@@ -12,8 +12,8 @@ db="postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/strdb"
 echo "Setting up database file"
 python3 setup_db.py --database "${db}"
 
-echo "Adding genes"
+#echo "Adding genes"
 #python3 gtf_to_sql.py --gtf "${gtf}" -d "${db}"
 
-echo "Inserting repeats"
-python3 insert_repeats.py -d "${db}" -r "${repeat_dir}" -s phylo_gap01
+#echo "Inserting repeats"
+#ython3 insert_repeats.py -d "${db}" -r "${repeat_dir}" -s phylo_gap01
