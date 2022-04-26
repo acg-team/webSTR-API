@@ -28,6 +28,17 @@ class Repeat(BaseModel):
     class Config:
         orm_mode = True
 
+class CRCVariation(BaseModel):
+    tcga_barcode: str
+    sample_type: str
+    start: int
+    end: int
+    reference: int
+    alt: int
+    repeat_id: int
+
+    class Config:
+        orm_mode = True
 
 class Transcript(BaseModel):
     start: int
