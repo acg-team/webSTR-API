@@ -1,11 +1,10 @@
 import os
 from sqlmodel import create_engine, Session
 
-#DATABASE_URL = os.environ['DATABASE_URL']
+DATABASE_URL = os.environ['DATABASE_URL']
 
 # Convert "postgres://<db_address>"  --> "postgresql+psycopg2://<db_address>" needed for SQLAlchemy
-#final_db_url = "postgresql+psycopg2://" + DATABASE_URL.lstrip("postgres://")  
-final_db_url="postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/strdb"
+final_db_url = "postgresql+psycopg2://" + DATABASE_URL.lstrip("postgres://")  
 
 engine = create_engine(final_db_url, echo=False)
 

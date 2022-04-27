@@ -129,7 +129,7 @@ Retrieve all variations given a gene name
     Streams a csv file of variations for the given gene
 """
 @app.get("/variations/", response_model=List[schemas.CRCVariation], tags=["Variations"])
-def show_variation_in_gene(gene: List[str] = Query(None), csv: Optional[bool] = False, db: Session = Depends(get_db)):
+def show_variation_in_gene(gene: List[str] = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):
     def variations_to_csv(variations):
         csvfile = io.StringIO()
         headers = ['patient','sample_type','repeat_id','start','end','ref','alt']
@@ -161,7 +161,7 @@ def show_variation_in_gene(gene: List[str] = Query(None), csv: Optional[bool] = 
 
     variations = db.query(models.CRCVariation).filter(models.CRCVariation.repeat_id.in_(repeat_ids)).all()
 
-    if csv:
+    if download:
         return StreamingResponse(variations_to_csv(variations), media_type="text/csv")
     else:
         return variations
