@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, List, Tuple
 from pydantic import BaseModel
 
 
@@ -25,6 +25,13 @@ class Repeat(BaseModel):
     divergence: float
     p_value: float
 
+    class Config:
+        orm_mode = True
+
+class RepeatInfo(BaseModel):
+    gene_id: int
+    repeat: Repeat
+    
     class Config:
         orm_mode = True
 

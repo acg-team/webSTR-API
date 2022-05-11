@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 
-from sqlmodel import Session
+from sqlmodel import Session, select 
 
 from .repeats import models, schemas
 from .repeats.database import get_db, engine
@@ -93,14 +93,65 @@ Retrieve all repeats associated with a given gene
     Returns
     List of Repeats
 """
-@app.get("/repeats/", response_model=List[schemas.Repeat], tags=["Repeats"])
-def show_repeats(gene: str, db: Session = Depends(get_db)):
-    gene_obj =  db.query(models.Gene).filter_by(ensembl_id=gene).one()
+@app.get("/repeats/", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
+def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
+    def repeats_to_csv(repeats):
+        csvfile = io.StringIO()
+        headers = ['gene','chr','start','end','msa','l_effective','n_effective']
+        rows = []
+        for r in repeats:
+            rows.append(
+                {
+                    'gene': r.gene,
+                    'chr': r.chr,
+                    'start': r.start,
+                    'end': r.end,
+                    'msa': r.msa,
+                    'l_effective': r.l_effective,
+                    'n_effective': r.n_effective
+                }
+            )
+        writer = csv.DictWriter(csvfile, headers)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+        csvfile.seek(0)
+        return(yield from csvfile)
 
-    repeats = db.query(models.Repeat).filter(models.Repeat.genes.any(
-                models.GenesRepeatsLink.gene_id == gene_obj.id)).all()
+    gene_obj_ids = []
+    if gene_names:
+        genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.name.in_(gene_names)).all()
+        gene_obj_ids = [id[0] for id in genes]
+        #repeats = db.query(models.Repeat).with_entities(models.Repeat.id).filter(models.Repeat.genes.any(
+        #    models.GenesRepeatsLink.gene_id.in_(gene_obj_ids))).all()
+    elif ensembl_ids:
+        genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.ensembl_id.in_(ensembl_ids)).all()
+        gene_obj_ids = [id[0] for id in genes]
+    
+
+    #repeats = db.query(models.Repeat
+    #        ).outerjoin(
+    #            models.Gene.chr, models.Gene.name, 
+    #           and_( 
+    #               models.GenesRepeatsLink.gene_id.in_(models.Repeat.genes)
+    #            )
+    #        ).options(contains_eager(models.Gene.chr, models.Gene.name)).with_entities(models.Repeat.id
+    #                ).filter(models.Repeat.genes.any(models.GenesRepeatsLink.gene_id.in_(gene_obj_ids))).all()
+
+    statement = select(models.Repeat, models.GenesRepeatsLink.gene_id
+                ).join(models.GenesRepeatsLink).filter(models.Repeat.genes.any(models.GenesRepeatsLink.gene_id.in_(gene_obj_ids)))
    
-    return repeats
+    repeats = db.exec(statement)
+    #for r in iter(repeats):
+    #    print(r)
+    
+    if download:
+        return StreamingResponse(repeats_to_csv(repeats), media_type="text/csv")
+    else:
+        results = [] 
+        for r in iter(repeats):
+            results.append({"repeat":r[0], "gene_id": r[1]})
+        return results
 
 """ 
 Retrieve all variations given a repeat id 
@@ -119,7 +170,7 @@ Retrieve all variations given a repeat id
 
 
 """ 
-Retrieve all variations given a gene name
+Retrieve all STR variations found in the genes associated with given gene names
      
    Parameters
    gene (Gene):
@@ -129,7 +180,7 @@ Retrieve all variations given a gene name
     Streams a csv file of variations for the given gene
 """
 @app.get("/variations/", response_model=List[schemas.CRCVariation], tags=["Variations"])
-def show_variation_in_gene(gene: List[str] = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):
+def show_str_variation_in_genes(gene_names: List[str] = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):
     def variations_to_csv(variations):
         csvfile = io.StringIO()
         headers = ['patient','sample_type','repeat_id','start','end','ref','alt']
@@ -153,7 +204,7 @@ def show_variation_in_gene(gene: List[str] = Query(None), download: Optional[boo
         csvfile.seek(0)
         return(yield from csvfile)
     
-    genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.name.in_(gene)).all()
+    genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.name.in_(gene_names)).all()
     gene_ids = [id[0] for id in genes]
     repeats = db.query(models.Repeat).with_entities(models.Repeat.id).filter(models.Repeat.genes.any(
             models.GenesRepeatsLink.gene_id.in_(gene_ids))).all()
