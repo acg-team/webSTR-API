@@ -29,9 +29,17 @@ class Repeat(BaseModel):
         orm_mode = True
 
 class RepeatInfo(BaseModel):
-    gene_id: int
-    repeat: Repeat
-    
+    start:	int
+    end: int
+    msa: str
+    l_effective: int
+    n_effective: int
+    ensembl_id: str
+    chr: str
+    strand: str
+    gene_name: str
+    gene_desc: str
+ 
     class Config:
         orm_mode = True
 
