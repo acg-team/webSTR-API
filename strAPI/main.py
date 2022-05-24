@@ -133,10 +133,10 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
     elif ensembl_ids:
         genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.ensembl_id.in_(ensembl_ids)).all()
         gene_obj_ids = [id[0] for id in genes]
-
-    statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink
-        ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id
-        ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id
+    
+    statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
+        ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
+        ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
         ).filter(models.Gene.id.in_(gene_obj_ids))
         
     repeats = db.exec(statement)

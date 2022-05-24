@@ -68,6 +68,11 @@ class Repeat(SQLModel, table=True):
     score: float = Field(nullable=False)
     p_value: float = Field(nullable=False)
     divergence: float = Field(nullable=False)
+    instable_calls: Optional[int] = Field(default = None)
+    stable_calls: Optional[int] = Field(default = None)
+    total_calls: Optional[int] = Field(default = None)
+    frac_variable: Optional[float] = Field(default = None)
+    avg_size_diff: Optional[float] = Field(default=None)
 
     # one to many Gene -> Repeats
     # gene_id: int = Field(foreign_key = "genes.id")
