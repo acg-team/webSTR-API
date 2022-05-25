@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, List, Tuple
 from pydantic import BaseModel
 
 
@@ -28,6 +28,32 @@ class Repeat(BaseModel):
     class Config:
         orm_mode = True
 
+class RepeatInfo(BaseModel):
+    start:	int
+    end: int
+    msa: str
+    l_effective: int
+    n_effective: int
+    ensembl_id: str
+    chr: str
+    strand: str
+    gene_name: str
+    gene_desc: str
+ 
+    class Config:
+        orm_mode = True
+
+class CRCVariation(BaseModel):
+    tcga_barcode: str
+    sample_type: str
+    start: int
+    end: int
+    reference: int
+    alt: int
+    repeat_id: int
+
+    class Config:
+        orm_mode = True
 
 class Transcript(BaseModel):
     start: int
