@@ -142,7 +142,7 @@ class Gene(SQLModel, table=True):
     repeats: List["Repeat"] = Relationship(back_populates="genes", link_model = GenesRepeatsLink)
 
     def __repr__(self):
-        return "Gene(ensembl_id={}, chr={}, strand={}, start={}, end={}, name={}, description={}, entrez_id={}, uniprot_id={})".format(
+        return "Gene(ensembl_id={}, chr={}, strand={}, start={}, end={}, name={}, description={}, entrez_id={})".format(
             self.ensembl_id,
             self.chr,
             self.strand,
