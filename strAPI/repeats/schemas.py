@@ -29,6 +29,7 @@ class Repeat(BaseModel):
         orm_mode = True
 
 class RepeatInfo(BaseModel):
+    repeat_id: int
     start:	int
     end: int
     msa: str

@@ -101,6 +101,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             repeat = r[0]
             gene = r[1]
             rows.append({
+                "repeat_id": repeat.id,
                 "start":  repeat.start,
                 "end":  repeat.end,
                 "msa": repeat.msa,
@@ -116,7 +117,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
-        headers = ['gene','chr','start','end','msa','l_effective','n_effective']
+        headers = ['repeat_id','start','end','msa','l_effective','n_effective', 'ensembl_id', 'chr', 'strand','gene_name','gene_desc']
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
