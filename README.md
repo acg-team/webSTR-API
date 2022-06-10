@@ -1,18 +1,26 @@
 ## How to start API locally on your machine
 
-### Set environmental variable on your machine to 
+### Step 1: Install all the requirements
 
-`export DB_CONN="sqlite:///db/example.db"`
+a) Set up python3 and virtualenv on your machine:
+[For Mac, follow instructions here.](https://gist.github.com/pandafulmanda/730a9355e088a9970b18275cb9eadef3)
+
+b) Create new virtual env and install all the requirements with the following command:
+`pip3 install -r requirements.txt`
+
+### Step 2: Set environmental variable on your machine to 
+
+`export DATABASE_URL="postgresql+psycopg2://postgres:YOURPASSWORD@localhost:5432/strdb"`
 
 For linux, add this line to `~/.bashrc` and restart your terminal. 
 
-### Start web server
+### Step 3: Start web server
 
 Run the following command from the root folder of this repo: 
 
-`uvicorn strAPI:main:app --reload`
+`uvicorn strAPI.main:app --host=0.0.0.0 --port=${PORT:-5000} --reload`
 
-### You can now access the api at `http://127.0.0.1:8000` 
+### Step 4: You can now access the api at `http://0.0.0.0:5000` 
 
 ## How to make it run via docker
 
