@@ -8,7 +8,7 @@ from repeats.models import Repeat
 def update_db_variation(df_row, session):
         try:
             repeat_id = df_row["repeat_id"]
-            print(repeat_id)
+           
             if repeat_id != '.':
                 repeat = session.query(Repeat).get(int(repeat_id))
                 repeat.instable_calls = df_row["instable_calls"]
@@ -17,7 +17,8 @@ def update_db_variation(df_row, session):
                 repeat.frac_variable = df_row["frac_variable"]
                 repeat.avg_size_diff = df_row["avg_size_diff"]
         except:
-            print("This might be a PERF repeat, " + df_row["repeat_id"])
+            print("This might be a PERF repeat ")
+            print(df_row)
         return True
 
 def cla_parser():

@@ -80,7 +80,8 @@ def main():
 # Get 100 genes (testing query)
 @app.get("/genes/", response_model=List[schemas.Gene], tags=["Genes"])
 def show_genes(db: Session = Depends(get_db)):
-    genes = db.query(models.Gene).limit(100).all()
+    gene_names = ["MSH6", "CDK12", "CTCF", "PAK1", "KRAS", "PMS2", "MLH1", "MSH2" , "BAX", "MSH3", "TGFBR1"]
+    genes = db.query(models.Gene).filter(models.Gene.name.in_(gene_names)).all()
     return genes
 
 """ 
@@ -111,13 +112,18 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "chr": gene.chr,
                 "strand": gene.strand,
                 "gene_name": gene.name,
-                "gene_desc": gene.description
+                "gene_desc": gene.description,
+                "total_calls": repeat.total_calls,
+                "frac_variable": repeat.frac_variable,
+                "avg_size_diff": repeat.avg_size_diff
             })
         return rows
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
-        headers = ['repeat_id','start','end','msa','l_effective','n_effective', 'ensembl_id', 'chr', 'strand','gene_name','gene_desc']
+        headers = ['repeat_id','start','end','msa','l_effective','n_effective', 
+            'ensembl_id', 'chr', 'strand','gene_name','gene_desc',
+            'frac_variable', 'avg_size_diff']
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
@@ -138,7 +144,8 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
     statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
         ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
         ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
-        ).filter(models.Gene.id.in_(gene_obj_ids))
+        ).filter(models.Gene.id.in_(gene_obj_ids)
+        ).filter(models.Repeat.avg_size_diff > 0)
         
     repeats = db.exec(statement)
     
