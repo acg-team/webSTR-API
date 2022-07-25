@@ -3,3 +3,5 @@
 *.ipynb_checkpoints*
 
 strAPI/local_queries.ipynb
+data/repeats
+.venv/

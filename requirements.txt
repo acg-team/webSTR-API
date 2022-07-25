@@ -14,7 +14,8 @@ pydantic==1.8.2
 pyOpenSSL==20.0.1
 simplejson==3.17.5
 SQLAlchemy==1.4.23
-starlette>0.14
+#starlette>0.14
+starlette==0.14.2
 unicodedata2==13.0.0.post2
 wincertstore==0.2
 uvicorn>0.9
