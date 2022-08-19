@@ -15,6 +15,28 @@ class Gene(BaseModel):
     class Config:
         orm_mode = True
 
+class Exon(BaseModel):
+    ensembl_exon : str
+    start : int
+    end : int
+    cds : bool
+    start_codon : Optional[int]
+    stop_codon : Optional[int]
+
+    class Config:
+        orm_mode = True
+
+class GeneInfo(BaseModel):
+    ensembl_id: str
+    chr: str
+    strand: str
+    start: int
+    end: int
+    name: Optional[str]
+    description: Optional[str]
+    exons: List[Exon]
+    class Config:
+        orm_mode = True
 
 class Repeat(BaseModel):
     start: int
@@ -33,8 +55,9 @@ class RepeatInfo(BaseModel):
     start:	int
     end: int
     msa: str
-    l_effective: int
-    n_effective: int
+    motif: str
+    period: int
+    copies: int
     ensembl_id: str
     chr: str
     strand: str
@@ -67,13 +90,4 @@ class Transcript(BaseModel):
     class Config:
         orm_mode = True
 
-class Exon(BaseModel):
-    ensembl_exon : str
-    start : int
-    end : int
-    cds : bool
-    start_codon : Optional[int]
-    stop_codon : Optional[int]
 
-    class Config:
-        orm_mode = True

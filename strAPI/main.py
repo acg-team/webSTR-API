@@ -1,5 +1,7 @@
 import io
 import csv
+from . import genes as gn
+
 from typing import List, Optional
 
 from fastapi.openapi.utils import get_openapi
@@ -9,6 +11,7 @@ from starlette.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 
 from sqlmodel import Session, select 
+from sqlalchemy import nullslast
 
 from .repeats import models, schemas
 from .repeats.database import get_db, engine
@@ -73,6 +76,7 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+
 @app.get("/")
 def main():
     return RedirectResponse(url="/docs/")
@@ -85,6 +89,26 @@ def show_genes(db: Session = Depends(get_db)):
     return genes
 
 """ 
+    Retrieve gene information based on gene names 
+
+    Returns
+    List of Genes
+
+    TODO: 
+    - Add querying by ensembl id and by region coordinates 
+    - Add features flag and return corresponding transcripts and exons
+""" 
+@app.get("/gene/", response_model=List[schemas.Gene], tags=["Genes"])
+def show_genes(db: Session = Depends(get_db), gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None)):
+    return gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
+    
+
+@app.get("/genefeatures/", response_model=List[schemas.GeneInfo], tags=["Genes"])
+def show_gene_info(db: Session = Depends(get_db), gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None)):
+        genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
+        return gn.get_genes_with_exons(db, genes)
+
+""" 
 Retrieve all repeats associated with a given gene
      
    Parameters
@@ -95,7 +119,7 @@ Retrieve all repeats associated with a given gene
     List of Repeats
 """
 @app.get("/repeats/", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
-def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
+def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
     def repeats_to_list(repeats):
         rows = []
         for r in iter(repeats):
@@ -106,8 +130,9 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "start":  repeat.start,
                 "end":  repeat.end,
                 "msa": repeat.msa,
-                "l_effective": repeat.l_effective,
-                "n_effective": repeat.n_effective,
+                "motif": repeat.msa.split(',', 1)[0],
+                "period": repeat.l_effective,
+                "copies": repeat.n_effective,
                 "ensembl_id": gene.ensembl_id,
                 "chr": gene.chr,
                 "strand": gene.strand,
@@ -121,7 +146,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
-        headers = ['repeat_id','start','end','msa','l_effective','n_effective', 
+        headers = ['repeat_id','start','end','msa','motif', 'period','copies', 
             'ensembl_id', 'chr', 'strand','gene_name','gene_desc',
             'frac_variable', 'avg_size_diff']
         
@@ -132,20 +157,16 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         csvfile.seek(0)
         return(yield from csvfile)
 
-    gene_obj_ids = []
-    if gene_names:
-        genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.name.in_(gene_names)).all()
-        gene_obj_ids = [id[0] for id in genes]
-
-    elif ensembl_ids:
-        genes =  db.query(models.Gene).with_entities(models.Gene.id).filter(models.Gene.ensembl_id.in_(ensembl_ids)).all()
-        gene_obj_ids = [id[0] for id in genes]
+    genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
+    gene_obj_ids = [gene.id for gene in genes]
     
     statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
         ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
         ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
         ).filter(models.Gene.id.in_(gene_obj_ids)
-        ).filter(models.Repeat.avg_size_diff > 0)
+        ).order_by(nullslast(models.Repeat.frac_variable.desc())).order_by(models.Repeat.total_calls)
+
+    #.filter(models.Repeat.avg_size_diff > 0)
         
     repeats = db.exec(statement)
     
@@ -239,14 +260,5 @@ def show_transcripts(gene: str, db: Session = Depends(get_db)):
 """
 @app.get("/exons/", response_model=List[schemas.Exon], tags=["Genes"])
 def get_sorted_exons(transcript: str, protein: bool = False, db: Session = Depends(get_db)):
-    exons = []
-    transcript_obj =  db.query(models.Transcript).filter_by(ensembl_transcript=transcript).one()
-    for exon in transcript_obj.exons:
-        if protein and not exon.cds:
-            continue
-        exons.append(exon)
+    return genes.get_exons_by_transcript(db, protein, transcript)
 
-    if transcript_obj.gene.strand == "+":
-        return list(sorted(exons, key=lambda x : x.start))
-    elif transcript_obj.gene.strand == "-":
-        return list(sorted(exons, key=lambda x : x.start, reverse=True))
