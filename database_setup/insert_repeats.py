@@ -2,12 +2,14 @@
 import argparse
 import os
 import pickle
+import sys 
+sys.path.append("..")
 
 from tral.repeat_list.repeat_list import RepeatList
 
-from repeats.models import Gene, Repeat
+from strAPI.repeats.models import Gene, Repeat, TRPanel
 from gtf_to_sql import connection_setup
-from utils.constants import UPSTREAM, CHROMOSOME_LENGTHS
+from strAPI.utils.constants import UPSTREAM, CHROMOSOME_LENGTHS
 
 def load_repeatlists(directory, targets=None):
     # collect all pickle files from input directory
@@ -100,6 +102,9 @@ def main():
         except KeyError:
             gene_dict[gene.chr] = [gene]
 
+    trpanel = session.query(TRPanel).filter(TRPanel.name == 'gangstr_crc_hg38').one()
+    print(trpanel)
+
     for file_name, repeat_list in load_repeatlists(input_path):
         print(f"Inserting repeats from file '{file_name}'")
         repeat_chrom = file_name.split("_")[0]
@@ -110,9 +115,16 @@ def main():
                     # The repeat could be mapped to a gene, check if this is the first 
                     # time the repeat maps to a gene (gene_count == 1), if so: make DB entry for repeat
                     gene_count += 1              
-                    if gene_count == 1:                        
+                    if gene_count == 1:                       
                         db_repeat = make_db_repeat(repeat, score_type)                                    
-                    gene.repeats.append(db_repeat)
+                    
+                        # Add relationships to gene and tr panel 
+                        gene.repeats.append(db_repeat)
+
+                        db_repeat.trpanel_id = trpanel.id
+                        trpanel.repeats.append(db_repeat)
+                        
+
                     for transcript in gene.transcripts:
                         # Add repeat to all of the genes transcripts that it maps to
                         if repeat_in_element(repeat=repeat, element=transcript):

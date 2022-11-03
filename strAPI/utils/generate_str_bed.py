@@ -3,7 +3,7 @@
 import argparse
 
 from setup_db import Gene
-from strAPI.gtf_to_sql import connection_setup
+from strAPI.database_setup.gtf_to_sql import connection_setup
 
 def make_str_bed(session, output_file, autosomes=True):
     """ Veeery inefficient as we go per chr, then sort the Genes and then also

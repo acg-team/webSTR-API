@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append("..")
+
 import argparse
 import os
 import io
@@ -12,7 +15,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 import mygene
-from repeats.models import Gene, Transcript, Exon
+from strAPI.repeats.models import Gene, Transcript, Exon, Genome
 
 def get_genome_annotations(gtf_handle, protein_coding=True):
     """ Parsing and optional filtering of gtf genome annotation file into pd.DataFrame
@@ -25,7 +28,7 @@ def get_genome_annotations(gtf_handle, protein_coding=True):
 
     return gtf_df
 
-def add_genes(session, gtf_df):
+def add_genes(session, gtf_df, genome):
     """ Get desired field values for all genes from a gtf data frame. For each gene in the gtf file,
     create a Gene instance. Finally, add all encountered Genes to the session
 
@@ -38,6 +41,8 @@ def add_genes(session, gtf_df):
     """
     gene_list = []
     gene_infos = query_gene_info(gtf_df)
+    
+
     for index, row in gtf_df.loc[(gtf_df["feature"] == "gene")].iterrows():
         ensembl_id = row["gene_id"].split(".")[0]  # emsebl gene id without version number
         gene_info = gene_infos[ensembl_id]
@@ -51,11 +56,12 @@ def add_genes(session, gtf_df):
                 chr = row["seqname"],
                 start = row["start"],
                 end = row["end"],
-                strand = row["strand"]
+                strand = row["strand"],
+                genome_id = genome.id
             )
        
         gene_list.append(gene)
-
+        genome.genes.append(gene)
     session.add_all(gene_list)
 
 def query_gene_info(gtf_df, query_fields=["name", "symbol", "entrezgene"]):    
@@ -177,6 +183,11 @@ def cla_parser():
         "--gtf", "-g", type=str, required=True, help="Path where the gtf file with genome annotations can be found, this will be parsed and inserted into the DB"
     )
 
+    # default for Sinergia GRCh38.p2 
+    parser.add_argument(
+        "--assembly", "-a", type=str, required=True, help="Genome assembly name in db"
+    )
+
     return parser.parse_args()
 
 
@@ -184,6 +195,7 @@ def main():
     args = cla_parser()
     db_path = args.database
     gtf_handle = args.gtf
+    assembly = args.assembly
 
     # db_path="sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
     # gtf_handle="/Users/maxverbiest/PhD/projects/str_database/data/genome_anntotation/gencode_small_brca2_M.gtf"
@@ -197,8 +209,10 @@ def main():
     # read in gtf file
     gtf_df = get_genome_annotations(gtf_handle, protein_coding=True)
 
+    genome = session.query(Genome).filter(Genome.version == assembly).one()
+
     # add genes, transcripts and exons from the gtf file to the session
-    add_genes(session, gtf_df)
+    add_genes(session, gtf_df, genome)
     add_transcripts(session, gtf_df)
     add_exons(session, gtf_df)
 

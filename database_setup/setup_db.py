@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append("..")
+
 import argparse
 import os
 
 
-from repeats.models import  Gene, Exon, Transcript, Repeat, CRCVariation, RepeatTranscriptsLink, ExonTranscriptsLink
+from strAPI.repeats.models import *
 from sqlmodel import create_engine, SQLModel
 
 def cla_parser():

@@ -53,51 +53,6 @@ class CRCVariation(SQLModel, table=True):
             self.end
         )
 
-class Repeat(SQLModel, table=True):
-    __tablename__ = "repeats"
-
-    id: int = Field(primary_key=True)   
-    source: Optional[str] = Field(default="unknown")# e.g. which detector found this Repeat?
-    msa: str = Field(nullable=True)
-    start: int = Field(nullable=False)
-    end: int = Field(nullable=False)
-    l_effective: int = Field(nullable=False)
-    n_effective: int = Field(nullable=False)
-    region_length: int = Field(nullable=False)
-    score_type: str = Field(nullable=False)
-    score: float = Field(nullable=False)
-    p_value: float = Field(nullable=False)
-    divergence: float = Field(nullable=False)
-    instable_calls: Optional[int] = Field(default = None)
-    stable_calls: Optional[int] = Field(default = None)
-    total_calls: Optional[int] = Field(default = None)
-    frac_variable: Optional[float] = Field(default = None)
-    avg_size_diff: Optional[float] = Field(default=None)
-
-    # one to many Gene -> Repeats
-    # gene_id: int = Field(foreign_key = "genes.id")
-    # gene: "Gene" = Relationship(back_populates="repeats")
-    # Add relationship directive to Repeat class for one to many Repeat -> CRCVariation
-    crcvariations : List[CRCVariation] = Relationship(back_populates="repeat")
-    # many to many Repeats <-> Transcripts
-    transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
-    # many to many Gene <-> Repeat
-    genes: List["Gene"] = Relationship(back_populates="repeats", link_model = GenesRepeatsLink)
-
-    def __repr__(self):
-        return "Repeat(source={}, msa={}, start={}, end={}, l_effective={}, n_effective={}, region_length={}, score_type={}, score={}, p_value={}, divergence={})".format(
-            self.source,
-            self.msa,
-            self.start,
-            self.end,
-            self.l_effective,
-            self.n_effective,
-            self.region_length,
-            self.score_type,
-            self.score,
-            self.p_value,
-            self.divergence
-        )
 
 class Transcript(SQLModel, table=True):
     __tablename__ = "transcripts"
@@ -139,6 +94,10 @@ class Gene(SQLModel, table=True):
     strand: str = Field(nullable=False)
     start: int = Field(nullable=False)
     end: int = Field(nullable=False)    
+
+    # one to many Genome -> Genes
+    genome_id: int = Field(foreign_key ="genomes.id")
+    genome: "Genome" = Relationship(back_populates="genes")
 
     transcripts: List[Transcript] = Relationship(back_populates="gene")
     # Add relationship directive to Gene class for one to many Gene -> Repeats
@@ -182,6 +141,139 @@ class Exon(SQLModel, table=True):
             self.start_codon,
             self.stop_codon
         )
+
+class Repeat(SQLModel, table=True):
+    __tablename__ = "repeats"
+
+    id: int = Field(primary_key=True)   
+    source: Optional[str] = Field(default="unknown")# e.g. which detector found this Repeat?
+    msa: str = Field(nullable=True)
+    start: int = Field(nullable=False)
+    end: int = Field(nullable=False)
+    l_effective: int = Field(nullable=False)
+    n_effective: int = Field(nullable=False)
+    region_length: int = Field(nullable=False)
+    score_type: str = Field(nullable=False)
+    score: float = Field(nullable=False)
+    p_value: float = Field(nullable=False)
+    divergence: float = Field(nullable=False)
+    #instable_calls: Optional[int] = Field(default = None)
+    #stable_calls: Optional[int] = Field(default = None)
+    #total_calls: Optional[int] = Field(default = None)
+    #frac_variable: Optional[float] = Field(default = None)
+    #avg_size_diff: Optional[float] = Field(default=None)
+
+    # One to many, TRPanel -> Repeat
+    trpanel_id: int = Field(foreign_key = "trpanels.id")
+    trpanel: "TRPanel" = Relationship(back_populates="repeats")
+
+    # Add relationship directive to Repeat class for one to many Repeat -> CRCVariation
+    crcvariations : List[CRCVariation] = Relationship(back_populates="repeat")
+    # many to many Repeats <-> Transcripts
+    transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
+    
+    # many to many Gene <-> Repeat
+    genes: List["Gene"] = Relationship(back_populates="repeats", link_model = GenesRepeatsLink)
+
+    def __repr__(self):
+        return "Repeat(source={}, msa={}, start={}, end={}, l_effective={}, n_effective={}, region_length={}, score_type={}, score={}, p_value={}, divergence={})".format(
+            self.source,
+            self.msa,
+            self.start,
+            self.end,
+            self.l_effective,
+            self.n_effective,
+            self.region_length,
+            self.score_type,
+            self.score,
+            self.p_value,
+            self.divergence
+        )
+
+""""
+Cohorts or studies/experiments 
+
+Combination of reference TRPanel + method + specific set of interesting STRs for 
+which some calculations were then performed and saved in a database. 
+
+Options: 1000G-150 (hg19, split by population), 1000G-HC (hg38, split by population and caller),
+GTEx (hg19), BXD (mm10), HS (rn7), GTEx (hg38), Sinergia-CRC (hg38)
+"""
+class Cohort(SQLModel, table=True):
+    __tablename__ = "cohorts"
+
+    id: int = Field(default=None, primary_key=True)
+    name: str = Field(nullable=False)
+    #cohort_set: Add a set of STRs, many to many relationship with Repeats or this is enough to handle in 
+    # the resuts tables
+
+    # one to many TRPanel -> Cohort
+    trpanel_id: int = Field(foreign_key ="trpanels.id")
+    trpanel: "TRPanel" = Relationship(back_populates="cohorts")
+
+    def __repr__(self):
+        return "Cohort(id={}, name={}, method={}, trpanel_id={})".format(
+            self.id,
+            self.name,
+            self.trpanel_id
+        )
+""""
+Reference Panels of STRs. Also known as TR SETS. 
+
+Options: gangstr_hg38_ver16, hipstr_hg19, hipstr_hg38, gangstr_mm10, hipstr_rn7
+
+Reference panel identifier - combination of method and genome assembly version
+"""
+class TRPanel(SQLModel, table=True):
+    __tablename__ = "trpanels"
+
+    id: int = Field(default=None, primary_key=True)
+    name: str = Field(nullable=False)
+    method: str = Field(nullable=False)
+    
+    # one to many Genome -> TRPanel
+    genome_id: int = Field(foreign_key ="genomes.id")
+    genome: "Genome" = Relationship(back_populates="trpanels")
+
+    # one to many TRPanel -> Cohorts 
+    cohorts: List[Cohort] = Relationship(back_populates="trpanel")
+
+    # one to many TRPanel -> Repeats 
+    repeats: List[Repeat] = Relationship(back_populates="trpanel")
+
+    def __repr__(self):
+        return "TRPanel(id={}, name={}, method={}, genome_id={})".format(
+            self.id,
+            self.name,
+            self.genome_id
+        )
+"""
+Genome assembly versions 
+
+"""
+class Genome(SQLModel, table=True):
+    __tablename__ = "genomes"
+
+    id: int = Field(default=None, primary_key=True)
+    name: str = Field(nullable=False)
+    organism: str = Field(nullable=False)
+    version: str = Field(nullable=True)
+
+    trpanels : List[TRPanel] = Relationship(back_populates="genome")
+    genes : List[Gene] = Relationship(back_populates="genome")
+
+    def __repr__(self):
+        return "Genome(id={}, name={}, organism={})".format(
+            self.id,
+            self.name,
+            self.organism
+        )
+
+
+
+
+
+
 
 
 
