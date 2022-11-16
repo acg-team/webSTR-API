@@ -137,18 +137,18 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "chr": gene.chr,
                 "strand": gene.strand,
                 "gene_name": gene.name,
-                "gene_desc": gene.description,
-                "total_calls": repeat.total_calls,
-                "frac_variable": repeat.frac_variable,
-                "avg_size_diff": repeat.avg_size_diff
+                "gene_desc": gene.description
+               # "total_calls": repeat.total_calls,
+               # "frac_variable": repeat.frac_variable,
+               # "avg_size_diff": repeat.avg_size_diff
             })
         return rows
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
         headers = ['repeat_id','start','end','msa','motif', 'period','copies', 
-            'ensembl_id', 'chr', 'strand','gene_name','gene_desc',
-            'frac_variable', 'avg_size_diff']
+            'ensembl_id', 'chr', 'strand','gene_name','gene_desc']
+        # 'frac_variable', 'avg_size_diff'
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
@@ -163,8 +163,8 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
     statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
         ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
         ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
-        ).filter(models.Gene.id.in_(gene_obj_ids)
-        ).order_by(nullslast(models.Repeat.frac_variable.desc())).order_by(models.Repeat.total_calls)
+        ).filter(models.Gene.id.in_(gene_obj_ids))
+        #).order_by(nullslast(models.Repeat.frac_variable.desc())).order_by(models.Repeat.total_calls)
 
     #.filter(models.Repeat.avg_size_diff > 0)
         
