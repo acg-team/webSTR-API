@@ -29,29 +29,6 @@ class GenesRepeatsLink(SQLModel, table=True):
         default=None, foreign_key="genes.id", primary_key=True
     )
 
-class CRCVariation(SQLModel, table=True):
-    __tablename__ = "crcvariations"
-
-    id: int = Field(primary_key=True)
-    start: int = Field(nullable=False)
-    end: int = Field(nullable=False)   
-    tcga_barcode: str = Field(nullable=False)
-    sample_type: str = Field(nullable=False)
-    reference: int = Field(nullable=False)
-    alt: int = Field(nullable=False)
-
-    # one to many Repeat -> CRCVariation
-    repeat_id: int = Field(foreign_key ="repeats.id")
-    repeat: "Repeat" = Relationship(back_populates="crcvariations")
-
-    def __repr__(self):
-        return "CRCVariation(tcga_barcode={}, reference_period={}, period={})".format(
-            self.tcga_barcode,
-            self.reference_period,
-            self.period,
-            self.start,
-            self.end
-        )
 
 
 class Transcript(SQLModel, table=True):
@@ -142,6 +119,21 @@ class Exon(SQLModel, table=True):
             self.stop_codon
         )
 
+class CRCVariation(SQLModel, table=True):
+    __tablename__ = "crcvariations"
+
+    id: int = Field(primary_key=True)   
+    instable_calls: Optional[int] = Field(default = None)
+    stable_calls: Optional[int] = Field(default = None)
+    total_calls: Optional[int] = Field(default = None)
+    frac_variable: Optional[float] = Field(default = None)
+    avg_size_diff: Optional[float] = Field(default=None)
+
+    # One to one, Repeat - CRCVariation
+    repeat_id: int = Field(foreign_key = "repeats.id")
+    repeat: "Repeat" = Relationship(back_populates="crcvariation")
+    
+
 class Repeat(SQLModel, table=True):
     __tablename__ = "repeats"
 
@@ -157,18 +149,18 @@ class Repeat(SQLModel, table=True):
     score: float = Field(nullable=False)
     p_value: float = Field(nullable=False)
     divergence: float = Field(nullable=False)
-    #instable_calls: Optional[int] = Field(default = None)
-    #stable_calls: Optional[int] = Field(default = None)
-    #total_calls: Optional[int] = Field(default = None)
-    #frac_variable: Optional[float] = Field(default = None)
-    #avg_size_diff: Optional[float] = Field(default=None)
 
     # One to many, TRPanel -> Repeat
     trpanel_id: int = Field(foreign_key = "trpanels.id")
     trpanel: "TRPanel" = Relationship(back_populates="repeats")
 
-    # Add relationship directive to Repeat class for one to many Repeat -> CRCVariation
-    crcvariations : List[CRCVariation] = Relationship(back_populates="repeat")
+    # Add relationship directive to Repeat class for one to one Repeat - CRCVariation
+    #crcvariation : "CRCVariation" = Relationship(back_populates="repeat")
+    crcvariation: Optional["CRCVariation"] = Relationship(
+        sa_relationship_kwargs={'uselist': False},
+        back_populates="repeat"
+    )
+
     # many to many Repeats <-> Transcripts
     transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
     

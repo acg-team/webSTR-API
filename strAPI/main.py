@@ -122,9 +122,11 @@ Retrieve all repeats associated with a given gene
 def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
     def repeats_to_list(repeats):
         rows = []
+        
         for r in iter(repeats):
             repeat = r[0]
             gene = r[1]
+            crcvar = r[3]
             rows.append({
                 "repeat_id": repeat.id,
                 "start":  repeat.start,
@@ -137,18 +139,18 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "chr": gene.chr,
                 "strand": gene.strand,
                 "gene_name": gene.name,
-                "gene_desc": gene.description
-               # "total_calls": repeat.total_calls,
-               # "frac_variable": repeat.frac_variable,
-               # "avg_size_diff": repeat.avg_size_diff
+                "gene_desc": gene.description,
+                "total_calls": crcvar.total_calls,
+                "frac_variable": crcvar.frac_variable,
+                "avg_size_diff": crcvar.avg_size_diff
             })
         return rows
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
         headers = ['repeat_id','start','end','msa','motif', 'period','copies', 
-            'ensembl_id', 'chr', 'strand','gene_name','gene_desc']
-        # 'frac_variable', 'avg_size_diff'
+            'ensembl_id', 'chr', 'strand','gene_name','gene_desc', 'total_calls',
+             'frac_variable', 'avg_size_diff']
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
@@ -160,11 +162,12 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
     genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
     gene_obj_ids = [gene.id for gene in genes]
     
-    statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
+    statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink, models.CRCVariation     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
         ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
         ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
-        ).filter(models.Gene.id.in_(gene_obj_ids))
-        #).order_by(nullslast(models.Repeat.frac_variable.desc())).order_by(models.Repeat.total_calls)
+        ).filter(models.Gene.id.in_(gene_obj_ids)
+        ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
+        ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
 
     #.filter(models.Repeat.avg_size_diff > 0)
         

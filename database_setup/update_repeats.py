@@ -2,8 +2,11 @@
 import argparse
 from gtf_to_sql import connection_setup
 import pandas as pd
+import sys
 
-from repeats.models import Repeat
+sys.path.append("..")
+
+from strAPI.repeats.models import Repeat, CRCVariation
 
 def update_db_variation(df_row, session):
         try:
@@ -11,11 +14,15 @@ def update_db_variation(df_row, session):
            
             if repeat_id != '.':
                 repeat = session.query(Repeat).get(int(repeat_id))
-                repeat.instable_calls = df_row["instable_calls"]
-                repeat.stable_calls = df_row["stable_calls"]
-                repeat.total_calls = df_row["total_calls"]
-                repeat.frac_variable = df_row["frac_variable"]
-                repeat.avg_size_diff = df_row["avg_size_diff"]
+                db_variation = CRCVariation(
+                    instable_calls = df_row["instable_calls"],
+                    stable_calls = df_row["stable_calls"],
+                    total_calls = df_row["total_calls"],
+                    frac_variable = df_row["frac_variable"],
+                    avg_size_diff = df_row["avg_size_diff"],
+                    repeat_id = repeat_id
+                )
+                repeat.crcvariation = db_variation
         except:
             print("This might be a PERF repeat ")
             print(df_row)

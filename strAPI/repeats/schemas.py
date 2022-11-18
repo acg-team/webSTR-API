@@ -63,9 +63,9 @@ class RepeatInfo(BaseModel):
     strand: str
     gene_name: str
     gene_desc: str
-    #total_calls: Optional[int]
-    #frac_variable: Optional[float]
-    #avg_size_diff: Optional[float]
+    total_calls: Optional[int]
+    frac_variable: Optional[float]
+    avg_size_diff: Optional[float]
 
     class Config:
         orm_mode = True
