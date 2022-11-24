@@ -139,7 +139,9 @@ class Repeat(SQLModel, table=True):
 
     id: int = Field(primary_key=True)   
     source: Optional[str] = Field(default="unknown")# e.g. which detector found this Repeat?
+    chr: str = Field(nullable=False)
     msa: str = Field(nullable=True)
+    motif: str = Field(nullable=True)
     start: int = Field(nullable=False)
     end: int = Field(nullable=False)
     l_effective: int = Field(nullable=False)

@@ -109,6 +109,65 @@ def show_gene_info(db: Session = Depends(get_db), gene_names: List[str] = Query(
         return gn.get_genes_with_exons(db, genes)
 
 """ 
+Retrieve repeat info given a repeat id 
+     
+   Parameters
+   repeat (Repeat):
+        repeat_id
+   
+    Returns
+    Repeat info 
+"""
+@app.get("/repeatinfo/", response_model=schemas.RepeatInfo, tags=["Repeats"])
+def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
+    try:
+        repeat = db.query(models.Repeat).get(repeat_id)
+        print("Found repeat")
+        print(repeat.id)
+    except models.Repeat.DoesNotExist:
+        return None
+
+    # Get CRC Variation associated with this repeat if available
+    crcvar = db.query(models.CRCVariation).filter(models.CRCVariation.repeat_id == repeat_id).first()
+
+    if crcvar is None:
+        crcvar_info = dict(total_calls=None, frac_variable = None, avg_size_diff = None)
+    else: 
+        crcvar_info = dict(crcvar)
+ 
+    # Get genes associated with this repeat
+    statement = select(models.GenesRepeatsLink, models.Gene     
+    ).where(models.GenesRepeatsLink.repeat_id == repeat_id 
+    ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id) 
+    gene = db.exec(statement).first()
+    
+    if gene is not None:
+        gene_info = gene[1]
+    else:
+        gene_info = {'ensembl_id': None, 'strand': None, 'name': None, 'description': None}
+
+    repeat_info = {
+        "repeat_id": repeat.id,
+        "chr": repeat.chr,
+        "start":  repeat.start,
+        "end":  repeat.end,
+        "msa": repeat.msa,
+        "motif": repeat.motif,
+        "period": repeat.l_effective,
+        "copies": repeat.n_effective,
+        "ensembl_id": gene_info.ensembl_id,
+        "strand": gene_info.strand,
+        "gene_name": gene_info.name,
+        "gene_desc": gene_info.description,
+        "total_calls": crcvar_info["total_calls"],
+        "frac_variable": crcvar_info["frac_variable"],
+        "avg_size_diff": crcvar_info["avg_size_diff"]
+    }
+
+    return repeat_info
+
+
+""" 
 Retrieve all repeats associated with a given gene
      
    Parameters
@@ -118,6 +177,7 @@ Retrieve all repeats associated with a given gene
     Returns
     List of Repeats
 """
+#TODO: Test on an example when there are multiple genes associated with the repeat
 @app.get("/repeats/", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
 def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
     def repeats_to_list(repeats):
@@ -129,14 +189,14 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             crcvar = r[3]
             rows.append({
                 "repeat_id": repeat.id,
+                "chr": repeat.chr,
                 "start":  repeat.start,
                 "end":  repeat.end,
                 "msa": repeat.msa,
-                "motif": repeat.msa.split(',', 1)[0],
+                "motif": repeat.motif,
                 "period": repeat.l_effective,
                 "copies": repeat.n_effective,
                 "ensembl_id": gene.ensembl_id,
-                "chr": gene.chr,
                 "strand": gene.strand,
                 "gene_name": gene.name,
                 "gene_desc": gene.description,
@@ -148,8 +208,8 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
 
     def repeats_to_csv(repeats):
         csvfile = io.StringIO()
-        headers = ['repeat_id','start','end','msa','motif', 'period','copies', 
-            'ensembl_id', 'chr', 'strand','gene_name','gene_desc', 'total_calls',
+        headers = ['repeat_id','chr','start','end','msa','motif','motif', 'period','copies', 
+            'ensembl_id', 'strand','gene_name','gene_desc', 'total_calls',
              'frac_variable', 'avg_size_diff']
         
         writer = csv.DictWriter(csvfile, headers)

@@ -37,6 +37,7 @@ def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
 
 def get_genes_with_exons(db, genes):
     genes_exons = []
+    # TODO: change to for each transcript in transcripts...., right now only returns the first
     for gene in iter(genes):
         transcript = db.query(Transcript).filter_by(gene_id=gene.id).first()
         exons_obj = get_exons_by_transcript(db, True, transcript)

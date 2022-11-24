@@ -39,9 +39,11 @@ class GeneInfo(BaseModel):
         orm_mode = True
 
 class Repeat(BaseModel):
+    chr: str
     start: int
     end: int 
     msa: str
+    motif: str
     l_effective: int
     n_effective: int
     divergence: float
@@ -52,9 +54,11 @@ class Repeat(BaseModel):
 
 class RepeatInfo(BaseModel):
     repeat_id: int
+    chr: str
     start:	int
     end: int
     msa: str
+    motif: str
     motif: str
     period: int
     copies: int
