@@ -52,10 +52,11 @@ def main():
     engine, session = connection_setup(db_path)
     list_of_panels = [{'name': 'gangstr_hg38_ver16', 'method': 'GangSTR', 'genome': 'hg38'},
                        {'name': 'hipstr_hg19', 'method': 'HipSTR', 'genome': 'hg19'},
-                       {'name': 'hipstr_hg38', 'method': 'HipSTR', 'genome': 'hg38'},
+                       {'name': 'EnsembleTR',  'method':'HipSTR-GangSTR-adVNTR-ExpansionHunter', 'genome': 'hg38'},
                        {'name': 'gangstr_mm10', 'method': 'GangSTR', 'genome': 'mm10'},
                        {'name': 'hipstr_rn7', 'method': 'HipSTR', 'genome': 'rn7'},
-                       {'name': 'gangstr_crc_hg38', 'method': 'GangSTR', 'genome': 'hg38'}]
+                       {'name': 'gangstr_crc_hg38', 'method': 'GangSTR', 'genome': 'hg38'}
+]
     
     for t in list_of_panels:
         t_obj = make_db_trpanel(session, t)

@@ -1,6 +1,7 @@
-from typing import Optional, List
-from sqlalchemy import Integer, String, Float, ForeignKey, Boolean, CheckConstraint, UniqueConstraint
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List, Dict
+from sqlalchemy import Integer, CheckConstraint, UniqueConstraint
+from sqlmodel import SQLModel, Field, Relationship, JSON, Column
+ 
 
 class ExonTranscriptsLink(SQLModel, table=True):
     __tablename__ = "exons_transcripts"
@@ -132,7 +133,44 @@ class CRCVariation(SQLModel, table=True):
     # One to one, Repeat - CRCVariation
     repeat_id: int = Field(foreign_key = "repeats.id")
     repeat: "Repeat" = Relationship(back_populates="crcvariation")
-    
+
+"""
+Allele Frequencies for 1000 Genomes project populations
+
+Example values 
+	afreq_AFR {"8": 0.099, "12": 0.901}
+    het_AFR   0.17800000000000002
+    numcalled_AFR	  866	
+"""
+class AlleleFrequency(SQLModel, table=True):
+    __tablename__ = "allele_frequencies"
+
+    id: int = Field(primary_key=True) 
+
+    afreq_AFR: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
+    het_AFR: Optional[float] = Field(default = None)
+    numcalled_AFR: Optional[int] = Field(default = None)
+
+    afreq_AMR: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
+    het_AMR: Optional[float] = Field(default = None)
+    numcalled_AMR: Optional[int] = Field(default = None)
+
+    afreq_EAS: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
+    het_EAS: Optional[float] = Field(default = None)
+    numcalled_EAS: Optional[int] = Field(default = None)
+
+    afreq_SAS: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
+    het_SAS: Optional[float] = Field(default = None)
+    numcalled_SAS: Optional[int] = Field(default = None)
+
+    afreq_EUR: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
+    het_EUR: Optional[float] = Field(default = None)
+    numcalled_EUR: Optional[int] = Field(default = None)
+
+    # One to one, Repeat - AlleleFrequency
+    repeat_id: int = Field(foreign_key = "repeats.id")
+    repeat: "Repeat" = Relationship(back_populates="allfreq")
+     
 
 class Repeat(SQLModel, table=True):
     __tablename__ = "repeats"
@@ -157,8 +195,12 @@ class Repeat(SQLModel, table=True):
     trpanel: "TRPanel" = Relationship(back_populates="repeats")
 
     # Add relationship directive to Repeat class for one to one Repeat - CRCVariation
-    #crcvariation : "CRCVariation" = Relationship(back_populates="repeat")
     crcvariation: Optional["CRCVariation"] = Relationship(
+        sa_relationship_kwargs={'uselist': False},
+        back_populates="repeat"
+    )
+    # Add relationship directive to Repeat class for one to one Repeat - AlleleFrequency
+    allfreq: Optional["AlleleFrequency"] = Relationship(
         sa_relationship_kwargs={'uselist': False},
         back_populates="repeat"
     )
