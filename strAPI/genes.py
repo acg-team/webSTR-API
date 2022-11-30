@@ -19,7 +19,8 @@ def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
         genes = db.query(Gene).filter(Gene.name.in_(gene_names)).all()
     elif ensembl_ids:
         genes =  db.query(Gene).with_entities(Gene.id).filter(Gene.ensembl_id.in_(ensembl_ids)).all()  
-    # Example chr1:55061293-55061300
+    # Example chr1:182393-1014541
+  
     elif reqion_query: 
         region_split = reqion_query.split(':')
         chrom = region_split[0]
@@ -29,9 +30,8 @@ def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
         buf = int((end-start)*(GENEBUFFER))
         start = start-buf
         end = end+buf
-        
-        genes = db.query(Gene).with_entities(Gene.id
-                ).where(Gene.chr == chrom,Gene.start >= start,Gene.end <= end).all()
+   
+        genes = db.query(Gene).where(Gene.chr == chrom,Gene.start >= start,Gene.end <= end).all()
     
     return genes
 
@@ -60,5 +60,5 @@ def get_genes_with_exons(db, genes):
             "description": gene.description,
             "exons": exons
         })
-        print(genes_exons)
+        
         return genes_exons         

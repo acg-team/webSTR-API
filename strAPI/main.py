@@ -122,8 +122,6 @@ Retrieve repeat info given a repeat id
 def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
     try:
         repeat = db.query(models.Repeat).get(repeat_id)
-        print("Found repeat")
-        print(repeat.id)
     except models.Repeat.DoesNotExist:
         return None
 
