@@ -23,7 +23,7 @@ def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
   
     elif reqion_query: 
         region_split = reqion_query.split(':')
-        chrom = region_split[0]
+        chrom = 'chr' + region_split[0]
         coord_split = region_split[1].split('-')
         start = int(coord_split[0])
         end = int(coord_split[1])
