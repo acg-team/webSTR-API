@@ -20,7 +20,7 @@ from .repeats.database import get_db, engine
 #models.Base.metadata.create_all(bind=engine)
 
 description = """
-Tral Short Tandem Repeats (STRs) database API 
+WebSTR-API: Database of Human genome-wide variation in Short Tandem Repeats (STRs) 
 """
 
 tags_metadata = [
@@ -54,14 +54,14 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="TralSTRs Database",
-        version="0.0.1",
+        title="WebSTR API",
+        version="1.0.1",
         description=description,
         routes=app.routes,
         tags=tags_metadata
     )
     openapi_schema["info"]["x-logo"] = {
-        "url": "https://www.sib.swiss//templates/sib/images/SIB_LogoQ_GBv.svg"
+        "url": "/static/images/logo.png"
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -226,9 +226,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         ).filter(models.Gene.id.in_(gene_obj_ids)
         ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
         ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
-
-    #.filter(models.Repeat.avg_size_diff > 0)
-        
+  
     repeats = db.exec(statement)
     
     if download:
