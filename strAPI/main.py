@@ -5,6 +5,7 @@ from . import genes as gn
 from typing import List, Optional
 
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
@@ -49,6 +50,8 @@ app = FastAPI(
     redoc_url="/docs",
     docs_url=None
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def custom_openapi():
     if app.openapi_schema:
