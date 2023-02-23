@@ -55,19 +55,30 @@ class Repeat(BaseModel):
 class RepeatInfo(BaseModel):
     repeat_id: int
     chr: str
-    start:	int
+    start: int
     end: int
-    msa: str
-    motif: str
+    msa: Optional[str]
     motif: str
     period: int
     copies: int
-    ensembl_id: str
-    chr: str
-    strand: str
-    gene_name: str
-    gene_desc: str
-    
+    ensembl_id: Optional[str]
+    strand: Optional[str]
+    gene_name: Optional[str]
+    gene_desc: Optional[str]
+    total_calls: Optional[int]
+    frac_variable: Optional[float]
+    avg_size_diff: Optional[float]
+
+    class Config:
+        orm_mode = True
+
+class AlleleFrequency(BaseModel):
+    population: str
+    n_effective: int
+    frequency: float
+    het: float
+    num_called: int
+    repeat_id: int
 
     class Config:
         orm_mode = True

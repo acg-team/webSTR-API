@@ -147,6 +147,13 @@ class AlleleFrequency(SQLModel, table=True):
 
     id: int = Field(primary_key=True) 
 
+    population: str = Field(nullable=False)
+    n_effective: int = Field(nullable=False)
+    frequency: float = Field(nullable=False)
+    het: Optional[float] = Field(nullable=True)
+    num_called: Optional[int] = Field(nullable=True)
+
+    """
     afreq_AFR: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
     het_AFR: Optional[float] = Field(default = None)
     numcalled_AFR: Optional[int] = Field(default = None)
@@ -166,10 +173,10 @@ class AlleleFrequency(SQLModel, table=True):
     afreq_EUR: Optional[Dict] = Field(default={}, sa_column=Column(JSON))
     het_EUR: Optional[float] = Field(default = None)
     numcalled_EUR: Optional[int] = Field(default = None)
-
-    # One to one, Repeat - AlleleFrequency
+    """
+    # One to many, Repeat ->  AlleleFrequency
     repeat_id: int = Field(foreign_key = "repeats.id")
-    repeat: "Repeat" = Relationship(back_populates="allfreq")
+    repeat: "Repeat" = Relationship(back_populates="allfreqs")
      
 
 class Repeat(SQLModel, table=True):
@@ -199,12 +206,11 @@ class Repeat(SQLModel, table=True):
         sa_relationship_kwargs={'uselist': False},
         back_populates="repeat"
     )
-    # Add relationship directive to Repeat class for one to one Repeat - AlleleFrequency
-    allfreq: Optional["AlleleFrequency"] = Relationship(
-        sa_relationship_kwargs={'uselist': False},
+    # Add relationship directive to Repeat class for one to many Repeat - AlleleFrequency
+    allfreqs: Optional[List["AlleleFrequency"]] = Relationship(
         back_populates="repeat"
     )
-
+    
     # many to many Repeats <-> Transcripts
     transcripts: List["Transcript"] = Relationship(back_populates="repeats", link_model = RepeatTranscriptsLink)
     

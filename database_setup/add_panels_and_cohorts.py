@@ -52,7 +52,7 @@ def main():
     engine, session = connection_setup(db_path)
     list_of_panels = [{'name': 'gangstr_hg38_ver16', 'method': 'GangSTR', 'genome': 'hg38'},
                        {'name': 'hipstr_hg19', 'method': 'HipSTR', 'genome': 'hg19'},
-                       {'name': 'EnsembleTR',  'method':'HipSTR-GangSTR-adVNTR-ExpansionHunter', 'genome': 'hg38'},
+                       {'name': 'consensustr_hg38',  'method':'HipSTR-GangSTR-adVNTR-ExpansionHunter', 'genome': 'hg38'},
                        {'name': 'gangstr_mm10', 'method': 'GangSTR', 'genome': 'mm10'},
                        {'name': 'hipstr_rn7', 'method': 'HipSTR', 'genome': 'rn7'},
                        {'name': 'gangstr_crc_hg38', 'method': 'GangSTR', 'genome': 'hg38'}
@@ -66,7 +66,7 @@ def main():
     list_of_cohorts = [{'name': 'Sinergia-CRC', 'panel': 'gangstr_crc_hg38'}, 
                        {'name': 'GTEx', 'panel': 'gangstr_hg38_ver16'},
                        {'name': '1000G-150', 'panel': 'hipstr_hg19'},
-                       {'name': '1000G', 'panel': 'hipstr_hg38'},
+                       {'name': 'ConsensusTR', 'panel': 'consensustr_hg38'},
                        {'name': 'GTEx', 'panel': 'hipstr_hg19'},
                        {'name': 'BXD', 'panel': 'gangstr_mm10'},
                        {'name': 'HS', 'panel': 'hipstr_rn7'}]

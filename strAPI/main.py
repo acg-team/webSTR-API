@@ -111,6 +111,24 @@ def show_gene_info(db: Session = Depends(get_db), gene_names: List[str] = Query(
         genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
         return gn.get_genes_with_exons(db, genes)
 
+
+""" 
+Retrieve allele frequencies for the given repeat id 
+     
+   Parameters
+   repeat (Repeat):
+        repeat_id
+   
+    Returns
+    List of Allele Frequencies
+"""
+@app.get("/allfreqs/", response_model=List[schemas.AlleleFrequency], tags=["Repeats"])
+def show_allele_freqs(repeat_id: int, db: Session = Depends(get_db)):
+    allfreqs = db.query(models.AlleleFrequency).filter(models.AlleleFrequency.repeat_id == repeat_id).all()
+    #if allfreqs == []:
+    #    return []
+    return allfreqs
+
 """ 
 Retrieve repeat info given a repeat id 
      
@@ -123,10 +141,7 @@ Retrieve repeat info given a repeat id
 """
 @app.get("/repeatinfo/", response_model=schemas.RepeatInfo, tags=["Repeats"])
 def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
-    try:
-        repeat = db.query(models.Repeat).get(repeat_id)
-    except models.Repeat.DoesNotExist:
-        return None
+    repeat = db.query(models.Repeat).filter(models.Repeat.id == repeat_id).one_or_none()
 
     # Get CRC Variation associated with this repeat if available
     crcvar = db.query(models.CRCVariation).filter(models.CRCVariation.repeat_id == repeat_id).first()
@@ -143,10 +158,10 @@ def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
     gene = db.exec(statement).first()
     
     if gene is not None:
-        gene_info = gene[1]
+        gene_info = dict(gene[1])
     else:
         gene_info = {'ensembl_id': None, 'strand': None, 'name': None, 'description': None}
-
+    print(gene_info)
     repeat_info = {
         "repeat_id": repeat.id,
         "chr": repeat.chr,
@@ -156,10 +171,10 @@ def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
         "motif": repeat.motif,
         "period": repeat.l_effective,
         "copies": repeat.n_effective,
-        "ensembl_id": gene_info.ensembl_id,
-        "strand": gene_info.strand,
-        "gene_name": gene_info.name,
-        "gene_desc": gene_info.description,
+        "ensembl_id": gene_info["ensembl_id"],
+        "strand": gene_info["strand"],
+        "gene_name": gene_info["name"],
+        "gene_desc": gene_info["description"],
         "total_calls": crcvar_info["total_calls"],
         "frac_variable": crcvar_info["frac_variable"],
         "avg_size_diff": crcvar_info["avg_size_diff"]
@@ -220,6 +235,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         csvfile.seek(0)
         return(yield from csvfile)
 
+    # Retrieving things based on genes?
     genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
     gene_obj_ids = [gene.id for gene in genes]
     

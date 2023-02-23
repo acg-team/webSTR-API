@@ -6,7 +6,8 @@ gtf="../data/genome_anntotation/gencode.v22.annotation.gtf"
 repeat_dir="../data/repeats"
 
 #change password to yours before running
-db=postgresql+psycopg2://postgres:PASSWORD@localhost:5432/strdb
+db=postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/strdb
+
 
 echo "Setting up database file"
 python setup_db.py --database "${db}"
@@ -23,5 +24,5 @@ python setup_db.py --database "${db}"
 #echo "Inserting repeats"
 #python insert_repeats.py -d "${db}" -r "${repeat_dir}" -s phylo_gap01
 
-echo "Inserting locus level variation"
-python update_repeats.py -d "${db}" -v ../data/20220527_locus_variation_no_groups.csv 
+#echo "Inserting locus level variation"
+#python update_repeats.py -d "${db}" -v ../data/20220527_locus_variation_no_groups.csv 
