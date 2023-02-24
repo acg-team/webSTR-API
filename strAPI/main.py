@@ -195,11 +195,12 @@ Retrieve all repeats associated with a given gene
 """
 #TODO: Test on an example when there are multiple genes associated with the repeat
 @app.get("/repeats/", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
-def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), reqion_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
+def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), region_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
     def repeats_to_list(repeats):
         rows = []
         
         for r in iter(repeats):
+            print(r)
             repeat = r[0]
             gene = r[1]
             crcvar = r[3]
@@ -235,19 +236,36 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         csvfile.seek(0)
         return(yield from csvfile)
 
-    # Retrieving things based on genes?
-    genes = gn.get_gene_info(db, gene_names, ensembl_ids, reqion_query)
-    gene_obj_ids = [gene.id for gene in genes]
+    # Retrieving things based on genes when gene_names
+    if not region_query:
+        genes = gn.get_gene_info(db, gene_names, ensembl_ids, region_query)
+        gene_obj_ids = [gene.id for gene in genes]
+        
+        statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink, models.CRCVariation     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
+            ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
+            ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
+            ).filter(models.Gene.id.in_(gene_obj_ids)
+            ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
+            ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
     
-    statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink, models.CRCVariation     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
-        ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
-        ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
-        ).filter(models.Gene.id.in_(gene_obj_ids)
-        ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
-        ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
-  
-    repeats = db.exec(statement)
-    
+        repeats = db.exec(statement)
+    else:
+        region_split = region_query.split(':')
+        chrom = 'chr' + region_split[0]
+        coord_split = region_split[1].split('-')
+        start = int(coord_split[0])
+        end = int(coord_split[1])
+        #buf = int((end-start)*(GENEBUFFER))
+        #start = start-buf
+        #end = end+buf
+   
+        statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink, models.CRCVariation     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
+            ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id    
+            ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
+            ).filter(models.Repeat.chr == chrom, models.Repeat.start >= start, models.Repeat.end <= end  
+            ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
+            ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
+        repeats = db.exec(statement)
     if download:
         return StreamingResponse(repeats_to_csv(repeats), media_type="text/csv")
     else:
