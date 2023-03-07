@@ -203,7 +203,11 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             print(r)
             repeat = r[0]
             gene = r[1]
-            crcvar = r[3]
+            if r[3]:
+                crcvar = dict(r[3])
+            else:
+                crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)
+    
             rows.append({
                 "repeat_id": repeat.id,
                 "chr": repeat.chr,
@@ -217,9 +221,9 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "strand": gene.strand,
                 "gene_name": gene.name,
                 "gene_desc": gene.description,
-                "total_calls": crcvar.total_calls,
-                "frac_variable": crcvar.frac_variable,
-                "avg_size_diff": crcvar.avg_size_diff
+                "total_calls": crcvar["total_calls"],
+                "frac_variable": crcvar["frac_variable"],
+                "avg_size_diff": crcvar["avg_size_diff"]
             })
         return rows
 
@@ -245,7 +249,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
             ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
             ).filter(models.Gene.id.in_(gene_obj_ids)
-            ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
+            ).join(models.CRCVariation, isouter=True 
             ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
     
         repeats = db.exec(statement)

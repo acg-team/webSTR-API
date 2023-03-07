@@ -15,6 +15,7 @@ def get_exons_by_transcript(db, cds_only, transcript_obj):
         return list(sorted(exons, key=lambda x : x.start, reverse=True))
 
 def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
+    genes = []
     if gene_names:
         genes = db.query(Gene).filter(Gene.name.in_(gene_names)).all()
     elif ensembl_ids:
