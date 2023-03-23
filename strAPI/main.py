@@ -100,7 +100,7 @@ def custom_openapi():
         "url": "/static/images/logo.png"
     }
     
-    app.openapi_schema = add_examples(openapi_schema, 'docs')
+    app.openapi_schema = add_examples(openapi_schema, '/static/examples')
     return app.openapi_schema
 
 
