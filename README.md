@@ -11,13 +11,13 @@ Source code for the WebSTR web portal can be found here: https://github.com/gymr
 
 All the available endpoints are described in automatically generated documentation that includes Python code examples and can be accessed here - http://webstr-api.ucsd.edu/docs
 
-## Can I set up the database and API locally on my machine?
-
-Yes! It is possible and we encourage it if you would like to add your own data to WebSTR or perform any advanced analysis on it. 
-
 ## Can I deploy my own version of the WebSTR-API on University cluster?
 
 Yes, for that please use provided Docker file, WebSTR-API can be deployed on any container-based service. 
+
+## Can I set up the database and API locally on my machine?
+
+Yes! It is possible and we encourage it if you would like to add your own data to WebSTR or perform any advanced analysis on it. 
 
 ### Instructions on how to set-up webSTR-API locally (for development): 
 
