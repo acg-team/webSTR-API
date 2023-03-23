@@ -1,3 +1,4 @@
+import os
 import io
 import csv
 from . import genes as gn
@@ -48,10 +49,42 @@ app = FastAPI(
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
     redoc_url="/docs",
+    swagger_ui_parameters={"syntaxHighlight.theme": "nord", 
+                           "layout": "BaseLayout"},
     docs_url=None
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+lable_lang_mapping = {"Python": "Python"}
+
+def add_examples(openapi_schema: dict, docs_dir):
+    path_key = 'paths'
+    code_key = 'x-codeSamples'
+
+    for folder in os.listdir(docs_dir):
+        base_path = os.path.join(docs_dir, folder)
+        files = [f for f in os.listdir(base_path) if os.path.isfile(os.path.join(base_path, f))]
+        for f in files:
+            parts = f.split('-')
+            if len(parts) >= 2:
+                route = '/' + '/'.join(parts[:-1])
+                method = parts[-1].split('.')[0]
+                print(f'[{path_key}][{route}][{method}][{code_key}]')
+
+                if route in openapi_schema[path_key]:
+                    if code_key not in openapi_schema[path_key][route][method]:
+                        openapi_schema[path_key][route][method].update({code_key: []})
+
+                    openapi_schema[path_key][route][method][code_key].append({
+                        'lang': lable_lang_mapping[folder],
+                        'source': open(os.path.join(base_path, f), "r").read(),
+                        'label': folder,
+                    })
+            else:
+                print(f'Error in adding examples code to openapi {f}')
+
+    return openapi_schema
 
 def custom_openapi():
     if app.openapi_schema:
@@ -66,7 +99,8 @@ def custom_openapi():
     openapi_schema["info"]["x-logo"] = {
         "url": "/static/images/logo.png"
     }
-    app.openapi_schema = openapi_schema
+    
+    app.openapi_schema = add_examples(openapi_schema, 'docs')
     return app.openapi_schema
 
 
@@ -194,7 +228,7 @@ Retrieve all repeats associated with a given gene
     List of Repeats
 """
 #TODO: Test on an example when there are multiple genes associated with the repeat
-@app.get("/repeats/", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
+@app.get("/repeats", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
 def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), region_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
     def repeats_to_list(repeats):
         rows = []
