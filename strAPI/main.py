@@ -100,7 +100,7 @@ def custom_openapi():
         "url": "/static/images/logo.png"
     }
     
-    app.openapi_schema = add_examples(openapi_schema, '/static/examples/')
+    # app.openapi_schema = add_examples(openapi_schema, '/static/examples/')
     # Disable code examples for now, path doesn't work
     app.openapi_schema = openapi_schema
     return app.openapi_schema
