@@ -13,7 +13,7 @@ All the available endpoints are described in automatically generated documentati
 
 ## Can I deploy my own version of the WebSTR-API on University cluster?
 
-Yes, for that please use provided Docker file, WebSTR-API can be deployed on any container-based service. 
+Yes, for that please use provided Docker file, WebSTR-API can be deployed on any container-based service.  
 
 ## Can I set up the database and API locally on my machine?
 
@@ -51,3 +51,26 @@ Run the following command from the root folder of this repo:
 `uvicorn strAPI.main:app --host=0.0.0.0 --port=${PORT:-5000} --reload`
 
 #### Step 4: You can now access the api at `http://0.0.0.0:5000` 
+
+
+## How to build the database from scratch or import my own data to WebSTR? 
+
+We recommend to start from making it work locally on your machine from a ready sql_dump that we provide upon request. Se instructions above. 
+We also provide Python scripts for working with the ORM (abstraction layer on top of the database) to import new data into database. 
+Explore "database_setup" directory for different utilities to import data into the database. 
+
+* If you would like to **add a new genome assembly** see utility add_genomes. Example usage:
+
+  `python add_genomes.py -d PATH_TO_DB`  
+
+  Modify the script according to your data. 
+
+  You will also need to import a GTF file corresponding to this assembly using gtf_to_sql.py 
+
+  Genes, transcripts and exoms currently available for hg38(GRCh38.p2) assembly have been imported from [Encode].(https://www.encodeproject.org/files/gencode.v22.annotation/) 
+
+* To **add a new reference panel** description and **study cohort**, use add_panels_and_cohorts.py
+
+* If you would like **to import a new reference panel** we recommend making a csv corresponding to the repeats table structure and importing it directly to SQL to save time. Alternatively see  ` insert_repeats.py ` and 
+` import_data_ensembltrs.py `  utilities that we made for repeats data coming  in different formats. Feel free to contact us for more details if you would like to make your own reference STR panel. 
+
