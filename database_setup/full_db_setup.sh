@@ -6,7 +6,7 @@ gtf="../data/genome_anntotation/gencode.v22.annotation.gtf"
 repeat_dir="../data/repeats"
 
 #change password to yours before running
-db=postgresql+psycopg2://postgres:Oxanaisnice@localhost:5432/strdb
+db=postgresql+psycopg2://postgres:YOURPASSWORD@localhost:5432/strdb
 
 
 echo "Setting up database file"
