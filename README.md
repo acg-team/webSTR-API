@@ -67,7 +67,7 @@ Explore "database_setup" directory for different utilities to import data into t
 
   You will also need to import a GTF file corresponding to this assembly using gtf_to_sql.py 
 
-  Genes, transcripts and exoms currently available for hg38(GRCh38.p2) assembly have been imported from [Encode].(https://www.encodeproject.org/files/gencode.v22.annotation/) 
+  Genes, transcripts and exoms currently available for hg38(GRCh38.p2) assembly have been imported from [Encode](https://www.encodeproject.org/files/gencode.v22.annotation/).
 
 * To **add a new reference panel** description and **study cohort**, use add_panels_and_cohorts.py
 
