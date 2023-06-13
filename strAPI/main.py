@@ -232,18 +232,40 @@ Retrieve all repeats associated with a given gene
 #TODO: Test on an example when there are multiple genes associated with the repeat
 @app.get("/repeats", response_model=List[schemas.RepeatInfo], tags=["Repeats"])
 def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Query(None), region_query: str = Query(None), download: Optional[bool] = False, db: Session = Depends(get_db)):  
-    def repeats_to_list(repeats):
+    def repeats_to_list(repeats, region_query):
         rows = []
         
         for r in iter(repeats):
-            print(r)
+      
             repeat = r[0]
-            gene = r[1]
-            if r[3]:
-                crcvar = dict(r[3])
+            gene_info = r[1]
+            print("Repeat")
+            print(repeat)
+            print("GENE INFO")
+            print(gene_info)
+            print("Whole thing")
+            print(r)
+            if gene_info:
+                if region_query:
+                    gene = dict(db.query(models.Gene).get(gene_info.gene_id))
+                else:
+                    gene = dict(gene_info)
             else:
-                crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)
-    
+                gene = dict(ensembl_id = None,
+                            strand=None,
+                            name=None,
+                            description=None)
+            print(len(r))
+            if len(r) < 4:
+                crcvar_info = r[2]
+            elif len(r) == 4:
+                crcvar_info = r[3]
+            
+            if crcvar_info:
+                crcvar = dict(crcvar_info)
+            else:
+                crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)           
+            
             rows.append({
                 "repeat_id": repeat.id,
                 "chr": repeat.chr,
@@ -253,17 +275,17 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "motif": repeat.motif,
                 "period": repeat.l_effective,
                 "copies": repeat.n_effective,
-                "ensembl_id": gene.ensembl_id,
-                "strand": gene.strand,
-                "gene_name": gene.name,
-                "gene_desc": gene.description,
+                "ensembl_id": gene["ensembl_id"],
+                "strand": gene["strand"],
+                "gene_name": gene["name"],
+                "gene_desc": gene["description"],
                 "total_calls": crcvar["total_calls"],
                 "frac_variable": crcvar["frac_variable"],
                 "avg_size_diff": crcvar["avg_size_diff"]
             })
         return rows
 
-    def repeats_to_csv(repeats):
+    def repeats_to_csv(repeats, region_query):
         csvfile = io.StringIO()
         headers = ['repeat_id','chr','start','end','msa','motif','motif', 'period','copies', 
             'ensembl_id', 'strand','gene_name','gene_desc', 'total_calls',
@@ -271,12 +293,15 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
-        for row in repeats_to_list(repeats):
+        for row in repeats_to_list(repeats, region_query):
             writer.writerow(row)
         csvfile.seek(0)
         return(yield from csvfile)
 
     # Retrieving things based on genes when gene_names
+    # TODO: 
+    # filter on period less than 7 
+    # join with panel name 
     if not region_query:
         genes = gn.get_gene_info(db, gene_names, ensembl_ids, region_query)
         gene_obj_ids = [gene.id for gene in genes]
@@ -285,6 +310,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id  #INNER JOIN genes ON genes.id = genes_repeats.gene_id)
             ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
             ).filter(models.Gene.id.in_(gene_obj_ids)
+            ).filter(models.Repeat.l_effective <= 6 
             ).join(models.CRCVariation, isouter=True 
             ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
     
@@ -298,18 +324,19 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         #buf = int((end-start)*(GENEBUFFER))
         #start = start-buf
         #end = end+buf
-   
-        statement = select(models.Repeat, models.Gene, models.GenesRepeatsLink, models.CRCVariation     #SELECT genes, repeats, genes_repeats FROM ((genes_repeats
-            ).join(models.Gene).where(models.Gene.id == models.GenesRepeatsLink.gene_id    
-            ).join(models.Repeat).where(models.Repeat.id == models.GenesRepeatsLink.repeat_id #INNER JOIN repeats on repeats.id = genes_repeats.repeat_id)
-            ).filter(models.Repeat.chr == chrom, models.Repeat.start >= start, models.Repeat.end <= end  
-            ).join(models.CRCVariation).where(models.Repeat.id == models.CRCVariation.repeat_id  
-            ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
+       
+        statement = select(models.Repeat, models.GenesRepeatsLink, models.CRCVariation    
+            ).select_from(models.Repeat
+            ).filter(models.Repeat.chr == chrom, models.Repeat.start >= start, models.Repeat.end <= end, models.Repeat.l_effective <= 6
+            ).join(models.GenesRepeatsLink, isouter=True
+            ).join(models.CRCVariation, isouter=True
+            )
+        
         repeats = db.exec(statement)
     if download:
-        return StreamingResponse(repeats_to_csv(repeats), media_type="text/csv")
+        return StreamingResponse(repeats_to_csv(repeats, region_query), media_type="text/csv")
     else:
-        results = repeats_to_list(repeats)
+        results = repeats_to_list(repeats, region_query)
         return results
 
 """ 

@@ -17,6 +17,7 @@ from sqlalchemy.exc import NoResultFound
 import mygene
 from strAPI.repeats.models import Gene, Transcript, Exon, Genome
 
+GENE_TYPE_NAME = "gene"
 def get_genome_annotations(gtf_handle, protein_coding=True):
     """ Parsing and optional filtering of gtf genome annotation file into pd.DataFrame
     """
@@ -24,7 +25,7 @@ def get_genome_annotations(gtf_handle, protein_coding=True):
 
     if protein_coding:
         # Select only protein coding genes from the gtf
-        gtf_df = gtf_df.loc[(gtf_df["gene_type"] == "protein_coding")]
+        gtf_df = gtf_df.loc[(gtf_df["gene_type"] != "protein_coding")]
 
     return gtf_df
 

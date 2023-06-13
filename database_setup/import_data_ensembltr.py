@@ -18,6 +18,9 @@ def cla_parser():
     parser.add_argument(
         "--db", "-d", type=str, required=True, help="Path to db"
     )
+    parser.add_argument(
+        "--afreqs", "-a", type=str, default=True, required=True, help="Import allele frequencies"
+    )
      
     return parser.parse_args()
 
@@ -59,6 +62,7 @@ def make_correct_csv_repeats(repeats_df):
 def main():
     args = cla_parser()
     db_path = args.db
+    import_allele_freqs = args.afreqs
     
     repeats_folder = '../data/repeats/EnsembleTR/repeats/'
     afreqs_folder = '../data/repeats/EnsembleTR/afreqs/'
@@ -74,10 +78,15 @@ def main():
         afreqs_file = afreqs_folder + 'afreq_het_' + current_chr +'.csv'
         print(afreqs_file)
         
-        afreqs_df = pd.read_table(afreqs_file, converters={'afreq_AFR': json.loads, 'afreq_AMR': json.loads, 'afreq_EAS': json.loads,
-            'afreq_SAS': json.loads, 'afreq_EUR': json.loads })
+        afreqs_df = pd.read_table(afreqs_file, converters={'afreq_AFR': json.loads('' or '{}'),
+                                                           'afreq_AMR': json.loads('' or '{}'), 
+                                                           'afreq_EAS': json.loads('' or '{}'),
+                                                            'afreq_SAS': json.loads('' or '{}'),
+                                                            'afreq_EUR': json.loads('' or '{}') },
+                                                         )
 
         engine, session = connection_setup(db_path)
+        print(afreqs_df)
 
         for i, repeat in repeats_df.iterrows():
             print("Checking if repeat already exists")
@@ -94,65 +103,70 @@ def main():
                 gene_ids = repeat["gene"]
                 print(gene_ids)
                 afreqs = afreqs_df[afreqs_df.ID == repeat.ID] 
-                """
-                db_afreqs = None
-                #db_afreqs = session.query(AlleleFrequency).filter(AlleleFrequency.repeat_id ==  db_repeat.id).one_or_none()
-        
-                if db_afreqs is None:
-                    print("Starting to populate afreqs")
-                    # "1000 Genomes Africa" 
-                    for l, freq in afreqs["afreq_AFR"].values[0].items():
-                        db_afreqs = AlleleFrequency(
-                            population = "1000 Genomes AFR",
-                            n_effective = int(l),
-                            frequency = freq,
-                            het = afreqs["het_AFR"],
-                            num_called = afreqs["numcalled_AFR"],
-                            repeat_id = db_repeat.id
-                        )
-                        print(db_afreqs)
-                        #db_repeat.allfreqs.append(db_afreqs)
-                    for l, freq in afreqs["afreq_AMR"].values[0].items():
-                        db_afreqs = AlleleFrequency(
-                            population = "1000 Genomes AMR",
-                            n_effective = int(l),
-                            frequency = freq,
-                            het = afreqs["het_AMR"],
-                            num_called = afreqs["numcalled_AMR"],
-                            repeat_id = db_repeat.id
-                        )
-                        #db_repeat.allfreqs.append(db_afreqs)
-                    for l, freq in afreqs["afreq_EAS"].values[0].items():
-                        db_afreqs = AlleleFrequency(
-                            population = "1000 Genomes EAS",
-                            n_effective = int(l),
-                            frequency = freq,
-                            het = afreqs["het_EAS"],
-                            num_called = afreqs["numcalled_EAS"],
-                            repeat_id = db_repeat.id
-                        )
-                        #db_repeat.allfreqs.append(db_afreqs)
-                    for l, freq in afreqs["afreq_SAS"].values[0].items():
-                        db_afreqs = AlleleFrequency(
-                            population = "1000 Genomes SAS",
-                            n_effective = int(l),
-                            frequency = freq,
-                            het = afreqs["het_SAS"],
-                            num_called = afreqs["numcalled_SAS"],
-                            repeat_id = db_repeat.id
-                        )
-                        #db_repeat.allfreqs.append(db_afreqs)
-                    for l, freq in afreqs["afreq_EUR"].values[0].items():
-                        db_afreqs = AlleleFrequency(
-                            population = "1000 Genomes EUR",
-                            n_effective = int(l),
-                            frequency = freq,
-                            het = afreqs["het_EUR"],
-                            num_called = afreqs["numcalled_EUR"],
-                            repeat_id = db_repeat.id
-                        )
-                        #db_repeat.allfreqs.append(db_afreqs)
-                """    
+                if False:
+                    db_afreqs = None
+                    #db_afreqs = session.query(AlleleFrequency).filter(AlleleFrequency.repeat_id ==  db_repeat.id).one_or_none()
+            
+                    if db_afreqs is None:
+                        print("Starting to populate afreqs")
+                        # "1000 Genomes Africa" 
+                        afr_freqs = json.loads(afreqs["afreq_AFR"].values[0])
+                        for l, freq in afr_freqs.items():
+                            db_afreqs = AlleleFrequency(
+                                population = "1000 Genomes AFR",
+                                n_effective = int(float(l)),
+                                frequency = freq,
+                                het = afreqs["het_AFR"],
+                                num_called = afreqs["numcalled_AFR"],
+                                repeat_id = db_repeat.id
+                            )
+                            
+                            db_repeat.allfreqs.append(db_afreqs)
+                        amr_freqs = json.loads(afreqs["afreq_AMR"].values[0])
+                        for l, freq in amr_freqs.items():
+                            db_afreqs = AlleleFrequency(
+                                population = "1000 Genomes AMR",
+                                n_effective = int(float(l)),
+                                frequency = freq,
+                                het = afreqs["het_AMR"],
+                                num_called = afreqs["numcalled_AMR"],
+                                repeat_id = db_repeat.id
+                            )
+                            db_repeat.allfreqs.append(db_afreqs)
+                        eas_freqs = json.loads(afreqs["afreq_EAS"].values[0])
+                        for l, freq in eas_freqs.items():
+                            db_afreqs = AlleleFrequency(
+                                population = "1000 Genomes EAS",
+                                n_effective = int(float(l)),
+                                frequency = freq,
+                                het = afreqs["het_EAS"],
+                                num_called = afreqs["numcalled_EAS"],
+                                repeat_id = db_repeat.id
+                            )
+                            db_repeat.allfreqs.append(db_afreqs)
+                        sas_freqs = json.loads(afreqs["afreq_SAS"].values[0])
+                        for l, freq in sas_freqs.items():
+                            db_afreqs = AlleleFrequency(
+                                population = "1000 Genomes SAS",
+                                n_effective = int(float(l)),
+                                frequency = freq,
+                                het = afreqs["het_SAS"],
+                                num_called = afreqs["numcalled_SAS"],
+                                repeat_id = db_repeat.id
+                            )
+                            db_repeat.allfreqs.append(db_afreqs)
+                        eur_freqs = json.loads(afreqs["afreq_EUR"].values[0])
+                        for l, freq in eur_freqs.items():
+                            db_afreqs = AlleleFrequency(
+                                population = "1000 Genomes EUR",
+                                n_effective = int(float(l)),
+                                frequency = freq,
+                                het = afreqs["het_EUR"],
+                                num_called = afreqs["numcalled_EUR"],
+                                repeat_id = db_repeat.id
+                            )
+                            db_repeat.allfreqs.append(db_afreqs)
+                  
                 for gene_id in gene_ids:
                     if gene_id != "-":
                         try:
@@ -163,6 +177,7 @@ def main():
                             print(db_repeat.id, db_gene.id)
                         except exc.NoResultFound: 
                             print("couldnt find gene in our db")
+                
             else: 
                 print("Coulnd't find this repeat in db")
         
