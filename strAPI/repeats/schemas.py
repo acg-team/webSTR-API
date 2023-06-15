@@ -68,6 +68,7 @@ class RepeatInfo(BaseModel):
     total_calls: Optional[int]
     frac_variable: Optional[float]
     avg_size_diff: Optional[float]
+    panel: str
 
     class Config:
         orm_mode = True

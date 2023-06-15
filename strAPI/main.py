@@ -264,8 +264,10 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             if crcvar_info:
                 crcvar = dict(crcvar_info)
             else:
-                crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)           
-            
+                crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)  
+
+            tr_panel = db.query(models.TRPanel).get(repeat.trpanel_id)
+            print(tr_panel)
             rows.append({
                 "repeat_id": repeat.id,
                 "chr": repeat.chr,
@@ -281,7 +283,8 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "gene_desc": gene["description"],
                 "total_calls": crcvar["total_calls"],
                 "frac_variable": crcvar["frac_variable"],
-                "avg_size_diff": crcvar["avg_size_diff"]
+                "avg_size_diff": crcvar["avg_size_diff"],
+                "panel": tr_panel.name
             })
         return rows
 
@@ -289,7 +292,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
         csvfile = io.StringIO()
         headers = ['repeat_id','chr','start','end','msa','motif','motif', 'period','copies', 
             'ensembl_id', 'strand','gene_name','gene_desc', 'total_calls',
-             'frac_variable', 'avg_size_diff']
+             'frac_variable', 'avg_size_diff', "panel"]
         
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
@@ -329,8 +332,8 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             ).select_from(models.Repeat
             ).filter(models.Repeat.chr == chrom, models.Repeat.start >= start, models.Repeat.end <= end, models.Repeat.l_effective <= 6
             ).join(models.GenesRepeatsLink, isouter=True
-            ).join(models.CRCVariation, isouter=True
-            )
+            ).join(models.CRCVariation, isouter=True)
+            
         
         repeats = db.exec(statement)
     if download:
