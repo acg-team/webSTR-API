@@ -239,12 +239,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
       
             repeat = r[0]
             gene_info = r[1]
-            print("Repeat")
-            print(repeat)
-            print("GENE INFO")
-            print(gene_info)
-            print("Whole thing")
-            print(r)
+
             if gene_info:
                 if region_query:
                     gene = dict(db.query(models.Gene).get(gene_info.gene_id))
@@ -266,8 +261,11 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             else:
                 crcvar = dict(total_calls=None, frac_variable = None, avg_size_diff = None)  
 
-            tr_panel = db.query(models.TRPanel).get(repeat.trpanel_id)
-            print(tr_panel)
+            tr_panel_name = db.query(models.TRPanel).get(repeat.trpanel_id).name
+            if tr_panel_name == 'hipstr_hg38':
+                tr_panel_name = 'ensemble_tr'
+        
+
             rows.append({
                 "repeat_id": repeat.id,
                 "chr": repeat.chr,
@@ -284,7 +282,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
                 "total_calls": crcvar["total_calls"],
                 "frac_variable": crcvar["frac_variable"],
                 "avg_size_diff": crcvar["avg_size_diff"],
-                "panel": tr_panel.name
+                "panel": tr_panel_name
             })
         return rows
 
