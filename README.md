@@ -7,9 +7,11 @@ WebSTR is the result of collaboration between two scientific groups [Maria Anisi
 
 Source code for the WebSTR web portal can be found here: https://github.com/gymrek-lab/webstr
 
-## How can I use the API? 
+## How to use the API? 
 
 All the available endpoints are described in automatically generated documentation that includes Python code examples and can be accessed here - http://webstr-api.ucsd.edu/docs
+
+For some example queries to get you started, check out [our Getting Started Guide](https://github.com/acg-team/webSTR-API/blob/main/GETTING_STARTED.md)
 
 ## Can I deploy my own version of the WebSTR-API on University cluster?
 
