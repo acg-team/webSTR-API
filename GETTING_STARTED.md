@@ -43,8 +43,7 @@ Access repeats via EnsembleID:
 [http://webstr-api.ucsd.edu/repeats?ensembl_ids=ENSG00000197386](http://webstr-api.ucsd.edu/repeats?ensembl_ids=ENSG00000197386)
 
 To get repeats from several genes, chain gene_names parameters together in the following manner:
- [https://webstr-api.ucsd.edu/repeats/?gene_names=HTT&gene_names=AGRN](http://webstr-api.ucsd.edu/repeats?gene_names=HTT&gene_names=AGRN)
-
+[https://webstr-api.ucsd.edu/repeats/?gene_names=HTT&gene_names=AGRN](http://webstr-api.ucsd.edu/repeats?gene_names=HTT&gene_names=AGRN)
 
 ### Getting extended information for a repeat of interest
 
@@ -55,5 +54,28 @@ Example request:
 
 ### Getting extended information for a gene of interest:
 
-Via gene name
-gene features: http://webstr-api.ucsd.edu/genefeatures/?gene_names=HTT
+Via gene name get gene features: http://webstr-api.ucsd.edu/genefeatures/?gene_names=HTT
+
+## Using the API from Python 
+
+Here is an example of importing repeats for genes of interest into a pandas DataFrame directly from the API using requests library. 
+
+```
+import requests 
+import pandas as pd
+
+resp = requests.get('http://webstr-api.ucsd.edu/repeats/?gene_names=HTT&gene_names=AGRN'
+df_repeats = pd.DataFrame.from_records(resp.json()) 
+```
+
+## Using the API from R 
+
+The same in R can be achieved using httr and jsonlite packages.
+
+```
+library(httr)
+library(jsonlite)
+
+res = GET("http://webstr-api.ucsd.edu/repeats/?gene_names=HTT&gene_names=AGRN")
+repeats = fromJSON(rawToChar(res$content))
+```
