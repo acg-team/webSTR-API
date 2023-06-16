@@ -197,7 +197,11 @@ def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
         gene_info = dict(gene[1])
     else:
         gene_info = {'ensembl_id': None, 'strand': None, 'name': None, 'description': None}
-    print(gene_info)
+    
+    tr_panel_name = db.query(models.TRPanel).get(repeat.trpanel_id).name
+    if tr_panel_name == 'hipstr_hg38':
+       tr_panel_name = 'ensemble_tr'
+
     repeat_info = {
         "repeat_id": repeat.id,
         "chr": repeat.chr,
@@ -213,7 +217,8 @@ def show_repeat_info(repeat_id: int, db: Session = Depends(get_db)):
         "gene_desc": gene_info["description"],
         "total_calls": crcvar_info["total_calls"],
         "frac_variable": crcvar_info["frac_variable"],
-        "avg_size_diff": crcvar_info["avg_size_diff"]
+        "avg_size_diff": crcvar_info["avg_size_diff"],
+        "panel": tr_panel_name
     }
 
     return repeat_info
@@ -265,7 +270,7 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             if tr_panel_name == 'hipstr_hg38':
                 tr_panel_name = 'ensemble_tr'
         
-
+            print(tr_panel_name)
             rows.append({
                 "repeat_id": repeat.id,
                 "chr": repeat.chr,
