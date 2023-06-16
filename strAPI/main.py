@@ -335,8 +335,9 @@ def show_repeats(gene_names: List[str] = Query(None), ensembl_ids: List[str] = Q
             ).select_from(models.Repeat
             ).filter(models.Repeat.chr == chrom, models.Repeat.start >= start, models.Repeat.end <= end, models.Repeat.l_effective <= 6
             ).join(models.GenesRepeatsLink, isouter=True
-            ).join(models.CRCVariation, isouter=True)
-            
+            ).join(models.CRCVariation, isouter=True
+            ).order_by(nullslast(models.CRCVariation.frac_variable.desc())).order_by(models.CRCVariation.total_calls)
+    
         
         repeats = db.exec(statement)
     if download:
