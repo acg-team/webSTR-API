@@ -19,7 +19,7 @@ def get_gene_info(db, gene_names, ensembl_ids, reqion_query):
     if gene_names:
         genes = db.query(Gene).filter(Gene.name.in_(gene_names)).all()
     elif ensembl_ids:
-        genes =  db.query(Gene).with_entities(Gene.id).filter(Gene.ensembl_id.in_(ensembl_ids)).all()  
+        genes =  db.query(Gene).filter(Gene.ensembl_id.in_(ensembl_ids)).all()  
     # Example chr1:182393-1014541
   
     elif reqion_query: 
@@ -50,7 +50,7 @@ def get_genes_with_exons(db, genes):
                 "end":  exon.end,
                 "cds": exon.cds
             })
-       
+    
         genes_exons.append({
             "ensembl_id": gene.ensembl_id,
             "start":  gene.start,
