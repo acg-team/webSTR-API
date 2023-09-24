@@ -1,6 +1,16 @@
 import os
 import io
 import csv
+import logging
+import sys
+from sqlalchemy.orm import joinedload
+
+# workaround to make relative imports work with __main__
+if __name__ == '__main__':
+   from os.path import dirname
+   __path__ = [dirname(__file__)]
+   del dirname
+
 from . import genes as gn
 
 from typing import List, Optional
@@ -12,11 +22,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 
+import sqlalchemy
 from sqlmodel import Session, select 
 from sqlalchemy import nullslast
 
 from .repeats import models, schemas
-from .repeats.database import get_db, engine
+from .repeats.database import get_db
 
 # this is not needed if using alembic
 #models.Base.metadata.create_all(bind=engine)
@@ -432,3 +443,18 @@ def show_transcripts(gene: str, db: Session = Depends(get_db)):
 def get_sorted_exons(transcript: str, protein: bool = False, db: Session = Depends(get_db)):
     return genes.get_exons_by_transcript(db, protein, transcript)
 
+""" Retrieve all CRC Gene Expression Repeat Length Correlations
+
+    Returns
+    List of correlations between genes and a specific repeat length in CRC patients
+"""
+@app.get("/crc_expr_repeatlen_corr/", response_model=List[schemas.CRCExprRepeatLenCorr])
+def get_crc_expr_repeatlen_corr(db: Session = Depends(get_db), limit = 7000):
+
+    correlations = db.query(models.CRCExprRepeatLenCorr).order_by(
+        sqlalchemy.func.abs(models.CRCExprRepeatLenCorr.coefficient).desc()
+    ).limit(limit).options(
+        joinedload(models.CRCExprRepeatLenCorr.gene), joinedload(models.CRCExprRepeatLenCorr.repeat)
+    ).all()
+
+    return [{**c.gene.__dict__, **c.repeat.__dict__, **c.__dict__} for c in correlations]

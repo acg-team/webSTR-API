@@ -4,4 +4,9 @@
 
 strAPI/local_queries.ipynb
 data/repeats
+db/docker_data/
 .venv/
+db/debug.db
+
+*/migrations/versions0/*
+*.env

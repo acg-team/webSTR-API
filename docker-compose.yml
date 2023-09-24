@@ -1,0 +1,55 @@
+version: '3.4'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PGUSER=webstr
+      - POSTGRES_USER=webstr
+      - POSTGRES_PASSWORD=webstr
+      - POSTGRES_DB=webstr
+    volumes:
+      - './db/docker_data:/var/lib/postgresql/data'
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    env_file:
+      - .env
+    image: webstr_api
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 5000:5000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - '.:${WEBSTR_SOURCE_MOUNT_PATH:-/tmp/src}' # not mount of the sourcecode if not set in .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    environment:
+      - WEBSTR_API_URL=http://api:5000
+      - FLASK_PORT=5001
+    build: https://github.com/gymrek-lab/webstr.git#main
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - 5001:5001
+
+
+
