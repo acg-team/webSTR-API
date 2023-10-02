@@ -1,7 +1,6 @@
 from typing import Optional, List, Dict
-from sqlalchemy import Integer, CheckConstraint, UniqueConstraint
+from sqlalchemy import Integer, CheckConstraint, UniqueConstraint, ForeignKeyConstraint
 from sqlmodel import SQLModel, Field, Relationship, JSON, Column
- 
 
 class ExonTranscriptsLink(SQLModel, table=True):
     __tablename__ = "exons_transcripts"
@@ -31,7 +30,6 @@ class GenesRepeatsLink(SQLModel, table=True):
     )
 
 
-
 class Transcript(SQLModel, table=True):
     __tablename__ = "transcripts"
     __table_args__ = (UniqueConstraint("ensembl_transcript"),)
@@ -50,6 +48,9 @@ class Transcript(SQLModel, table=True):
 
     # many to many Repeats <-> Transcripts
     repeats: List["Repeat"] = Relationship(back_populates="transcripts", link_model = RepeatTranscriptsLink)
+
+    class Config:
+        arbitrary_types_allowed = True
 
     def __repr__(self):
         return "Transcript(ensembl_transcript={}, start={}, end={})".format(
@@ -82,6 +83,10 @@ class Gene(SQLModel, table=True):
     # repeats: List[Repeat] = Relationship(back_populates="gene")
     # many to many Gene <-> Repeat
     repeats: List["Repeat"] = Relationship(back_populates="genes", link_model = GenesRepeatsLink)
+
+    crc_expr_repeatlen_corr: Optional[List["CRCExprRepeatLenCorr"]] = Relationship(
+        back_populates="gene"
+    )
 
     def __repr__(self):
         return "Gene(ensembl_id={}, chr={}, strand={}, start={}, end={}, name={}, description={}, entrez_id={})".format(
@@ -133,6 +138,7 @@ class CRCVariation(SQLModel, table=True):
     # One to one, Repeat - CRCVariation
     repeat_id: int = Field(foreign_key = "repeats.id")
     repeat: "Repeat" = Relationship(back_populates="crcvariation")
+    
 
 """
 Allele Frequencies for 1000 Genomes project populations
@@ -206,6 +212,11 @@ class Repeat(SQLModel, table=True):
         sa_relationship_kwargs={'uselist': False},
         back_populates="repeat"
     )
+
+    crc_expr_repeatlen_corr: Optional[List["CRCExprRepeatLenCorr"]] = Relationship(
+        back_populates="repeat"
+    )
+
     # Add relationship directive to Repeat class for one to many Repeat - AlleleFrequency
     allfreqs: Optional[List["AlleleFrequency"]] = Relationship(
         back_populates="repeat"
@@ -295,6 +306,7 @@ Genome assembly versions
 """
 class Genome(SQLModel, table=True):
     __tablename__ = "genomes"
+    __table_args__ = (UniqueConstraint("name", name = "ix_genome_name_unique_constraint"),)
 
     id: int = Field(default=None, primary_key=True)
     name: str = Field(nullable=False)
@@ -312,9 +324,34 @@ class Genome(SQLModel, table=True):
         )
 
 
+"""
+Correlation of gene expression and length of STRs in cancer patients 
+"""
+class CRCExprRepeatLenCorr(SQLModel, table=True):
+    __tablename__ = "crc_expr_repeatlen_corr"
+    
 
+    repeat_id: Optional[int] = Field(
+        default=None, foreign_key="repeats.id", primary_key=True
+    )
+    repeat: "Repeat" = Relationship(back_populates="crc_expr_repeatlen_corr")
 
+    gene_id: Optional[int] = Field(
+        default=None, foreign_key="genes.id", primary_key=True
+    )
+    gene: "Gene" = Relationship(back_populates="crc_expr_repeatlen_corr")
 
+    p_value: float = Field(nullable=False)
+    p_value_corrected: float = Field(nullable=False)
+    coefficient: float = Field(nullable=False)
+    intercept: float = Field(nullable=False)
+
+    def __repr__(self):
+        return "CRCExprRepeatLenCorr(gene={}, repeat={}, p_value={})".format(
+            self.gene.ensembl_id,
+            self.repeat.start,
+            self.p_value
+        )
 
 
 

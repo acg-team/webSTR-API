@@ -37,8 +37,10 @@ def main():
                        {'name': 'rn7', 'version': '', 'organism': 'Rattus norvegicus'}]
     
     for g in list_of_genomes:
-        g_obj = make_db_genome(g)
-        session.add(g_obj)
+        existing_genome = session.query(Genome).filter(Genome.name == g["name"]).first()
+        if not existing_genome:
+            g_obj = make_db_genome(g)
+            session.add(g_obj)
     session.commit()
 
 if __name__ == "__main__":

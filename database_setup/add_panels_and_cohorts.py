@@ -8,14 +8,19 @@ from gtf_to_sql import connection_setup
 
 def make_db_trpanel(session, trpanel_info):
 
-    # initialize instance of TR Panel object
-    db_panel = TRPanel(
-        name = trpanel_info['name'],
-        method = trpanel_info['method']
-    )
+    db_panel = session.query(TRPanel).filter(
+        TRPanel.name == trpanel_info['name'] and TRPanel.method == trpanel_info['method'] 
+        ).first()
+
+    if not db_panel:        
+        # initialize instance of TR Panel object
+        db_panel = TRPanel(
+            name = trpanel_info['name'],
+            method = trpanel_info['method']
+        )
 
     # get corresponding genome and assign to panel
-    genome = session.query(Genome).filter(Genome.name == trpanel_info['genome']).one()
+    genome = session.query(Genome).filter(Genome.name == trpanel_info['genome']).first()
     genome.trpanels.append(db_panel)
     db_panel.genome_id = genome.id
 
@@ -23,13 +28,18 @@ def make_db_trpanel(session, trpanel_info):
 
 def make_db_cohort(session, cohort_info):
 
-    # initialize instance of TR Panel object
-    db_cohort = Cohort(
-        name = cohort_info['name'],  
-    )
+    db_cohort = session.query(Cohort).filter(
+        Cohort.name == cohort_info['name']
+        ).first()
+
+    if not db_cohort: 
+        # initialize instance of TR Panel object
+        db_cohort = Cohort(
+            name = cohort_info['name'],  
+        )
 
     # get corresponding genome and assign to panel
-    trpanel = session.query(TRPanel).filter(TRPanel.name == cohort_info['panel']).one()
+    trpanel = session.query(TRPanel).filter(TRPanel.name == cohort_info['panel']).first()
     #print(trpanel)
     trpanel.cohorts.append(db_cohort)
     db_cohort.trpanel_id = trpanel.id

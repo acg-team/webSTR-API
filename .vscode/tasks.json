@@ -1,0 +1,43 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "docker-build",
+			"label": "docker-build",
+			"platform": "python",
+			"dockerBuild": {
+				"tag": "webstrapi:latest",
+				"dockerfile": "${workspaceFolder}/Dockerfile",
+				"context": "${workspaceFolder}",
+				"pull": true,
+			}
+		},
+		{
+			"type": "docker-run",
+			"label": "docker-run: debug",
+			"dependsOn": [
+				"docker-build"
+			],
+			"dockerRun": {
+				"env": {
+				  "DATABASE_URL": "sqlite:///db/debug.db",
+				  "WEBSTR_DATABAS_UPGRADE": "True"
+				},
+				"mounts": [
+					"source=${workspaceFolder},target=/app,type=bind,consistency=cached"
+				],
+			},
+			"python": {
+				"args": [
+					"strAPI.main:app",
+					"--host",
+					"0.0.0.0",
+					"--port",
+					"5000",
+					"--reload"
+				],
+				"module": "uvicorn",
+			}
+		}
+	]
+}

@@ -2,7 +2,6 @@ from datetime import date
 from typing import Optional, List, Tuple
 from pydantic import BaseModel
 
-
 class Gene(BaseModel):
     ensembl_id: str
     chr: str
@@ -104,4 +103,24 @@ class Transcript(BaseModel):
     class Config:
         orm_mode = True
 
+class CRCExprRepeatLenCorr(BaseModel):
 
+    repeat_id: int
+    gene_id: int
+    coefficient: float
+    intercept: float
+    p_value: float
+    p_value_corrected: float 
+     
+    ensembl_id: str
+    chr: str
+    start: int
+
+    name: Optional[str]
+    description: Optional[str]
+    
+    class Config:
+        orm_mode = True
+
+
+ 
