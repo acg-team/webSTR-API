@@ -11,10 +11,10 @@ echo "Setting up database file"
 python setup_db.py --database "${db}"
 
 #echo "Adding genomes"
-#python add_genomes.py -d "${db}"
+python add_genomes.py -d "${db}"
 
 #echo "Adding panels and cohorts"
-#python add_panels_and_cohorts.py -d "${db}"
+python add_panels_and_cohorts.py -d "${db}"
 
 #echo "Adding genes"
 #python gtf_to_sql.py --gtf "${gtf}" -d "${db}" -a "GRCh38.p2"

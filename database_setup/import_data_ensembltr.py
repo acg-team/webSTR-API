@@ -62,6 +62,8 @@ def make_correct_csv_repeats(repeats_df):
 def main():
     args = cla_parser()
     db_path = args.db
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
+
     import_allele_freqs = args.afreqs
     
     repeats_folder = '../data/repeats/EnsembleTR/repeats/'

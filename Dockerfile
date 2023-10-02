@@ -28,6 +28,6 @@ COPY . .
 ARG PORT=5000
 EXPOSE $PORT
 
-CMD bash entrypoint.sh
+ENTRYPOINT [ "bash", "entrypoint.sh"]
 
 

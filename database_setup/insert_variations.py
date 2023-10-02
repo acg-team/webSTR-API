@@ -51,6 +51,8 @@ def cla_parser():
 def main():
     args = cla_parser()
     db_path = args.database
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
+
     input_path = args.var
     print("Connecting to the database")
     engine, session = connection_setup(db_path)

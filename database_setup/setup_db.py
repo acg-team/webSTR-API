@@ -19,15 +19,16 @@ def cla_parser():
     return parser.parse_args()
 
 def main():
-    # db_handle = "sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
+    # db_path = "sqlite:////Users/maxverbiest/PhD/projects/str_database/db/test.db"
 
     args = cla_parser()
-    db_handle = args.database
+    db_path = args.database
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
 
-    #if os.path.exists(db_handle):
+    #if os.path.exists(db_path):
     #    raise FileExistsError("A database already exists at specified handle, exiting!")
 
-    engine = create_engine(db_handle, echo=True)
+    engine = create_engine(db_path, echo=True)
     SQLModel.metadata.create_all(engine)
 
 if __name__ == "__main__":

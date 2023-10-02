@@ -15,30 +15,39 @@ import logging
 from gtf_to_sql import connection_setup
 import pandas as pd
 
-from strAPI.repeats.models import Gene, Repeat, CRCExprRepeatLenCorr
+from strAPI.repeats.models import Gene, Repeat, CRCExprRepeatLenCorr, TRPanel
 
 
 def update_db_record(df_row, session, genes_by_code, inserted_entities):
 
+    gangstr_crc_hg38_panel = session.query(TRPanel).filter_by(name='gangstr_crc_hg38').first()
+        
     def get_repeat(tmp_id, range=False):
         chr, start = tmp_id.split("_")
         start = int(start)
-        query = session.query(Repeat).filter_by(chr=chr.lower())
+        # filterning only repeats from gangstr_crc_hg38 tr panel
+        query = session.query(Repeat).filter_by(chr=chr.lower()).filter_by(
+            trpanel_id=gangstr_crc_hg38_panel.id)
         if range:
             query = query.filter(Repeat.start<=start).filter(Repeat.end>start)
         else:
             query = query.filter_by(start=start)
-        return query.first()
+
+        result = query.limit(2).all()
+        if len(result) > 1:
+            logging.warning(f"More than one repeat found for {tmp_id} \n{result[0]} \n{result[1]}")
+
+        return result[0] if len(result) > 0 else None
 
     repeat = get_repeat(df_row["tmp_id"].strip())
     gene = genes_by_code.get(df_row["gene"].strip())
 
     repeat_id = None
     gene_id = None
-
+ 
     if repeat is None:
         logging.info(
-            f"Repeat {len(inserted_entities)} with code {df_row['tmp_id']} not found in database. Trying range search.")
+            f"Repeat {len(inserted_entities)} with code {df_row['tmp_id']} not found in database. Range search can help.")
         repeat = get_repeat(df_row["tmp_id"].strip(), range=True)
         if repeat is None:
             logging.info(
@@ -94,6 +103,8 @@ def cla_parser():
 def main():
     args = cla_parser()
     db_path = args.database
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
+
     input_path = args.file
     logging.info("Connecting to the database")
     engine, session = connection_setup(db_path)

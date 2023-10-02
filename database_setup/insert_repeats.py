@@ -89,6 +89,8 @@ def cla_parser():
 def main():
     args = cla_parser()
     db_path = args.database
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
+    
     input_path = args.repeat_dir
     score_type = args.score_type
     

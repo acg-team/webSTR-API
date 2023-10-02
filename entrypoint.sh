@@ -1,18 +1,24 @@
 #!/bin/bash
 
+echo "Running webstrcontainer with parameters: DATABASE_URL='${DATABASE_URL:-0}' WEBSTR_DATABASE_DATA_UPGRADE='${WEBSTR_DATABASE_DATA_UPGRADE:-0}'"
+
 if [ ${WEBSTR_DATABASE_MIGRATE:-0} == "True" ]
 then
-    echo "Running database upgrade ${DATABASE_URL}"
+    echo "Running alembic database migrations ${DATABASE_URL}"
     python -m alembic upgrade head
 else
-    echo "Skipping database upgrade"
+    echo "Skipping alembic database migrations"
 fi
 
 if [ ${WEBSTR_DATABASE_DATA_UPGRADE:-0} == "True" ]
 then
-    echo "Running database data insert ${DATABASE_URL}"
+    echo "Running database creation script"
     cd database_setup
-    bash full_db_setup.sh
+    echo "Running database schema"
+    python setup_db.py --database "${DATABASE_URL}"
+    
+    echo "Running database data insert asyncronously"
+    bash full_db_setup.sh &
     cd ..
 else
     echo "Skipping database  data insert"
