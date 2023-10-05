@@ -61,12 +61,12 @@ def main():
     db_path = db_path.replace("postgres://", "postgresql+psycopg2://") 
     
     engine, session = connection_setup(db_path)
-    list_of_panels = [{'name': 'gangstr_hg38_ver16', 'method': 'GangSTR', 'genome': 'hg38'},
+    list_of_panels = [ {'name': 'gangstr_hg38_ver16', 'method': 'GangSTR', 'genome': 'hg38'},
                        {'name': 'hipstr_hg19', 'method': 'HipSTR', 'genome': 'hg19'},
-                       {'name': 'consensustr_hg38',  'method':'HipSTR-GangSTR-adVNTR-ExpansionHunter', 'genome': 'hg38'},
+                       {'name': 'ensembleTR',  'method': 'EnsembleTR', 'genome': 'hg38'},
                        {'name': 'gangstr_mm10', 'method': 'GangSTR', 'genome': 'mm10'},
                        {'name': 'hipstr_rn7', 'method': 'HipSTR', 'genome': 'rn7'},
-                       {'name': 'gangstr_crc_hg38', 'method': 'GangSTR', 'genome': 'hg38'}
+                       {'name': 'gangstr_crc_hg38', 'method': 'GangSTR', 'genome': 'hg38'},
 ]
     
     for t in list_of_panels:
@@ -77,10 +77,11 @@ def main():
     list_of_cohorts = [{'name': 'Sinergia-CRC', 'panel': 'gangstr_crc_hg38'}, 
                        {'name': 'GTEx', 'panel': 'gangstr_hg38_ver16'},
                        {'name': '1000G-150', 'panel': 'hipstr_hg19'},
-                       {'name': 'ConsensusTR', 'panel': 'consensustr_hg38'},
+                       {'name': '1000G', 'panel': 'ensembleTR'},
                        {'name': 'GTEx', 'panel': 'hipstr_hg19'},
                        {'name': 'BXD', 'panel': 'gangstr_mm10'},
-                       {'name': 'HS', 'panel': 'hipstr_rn7'}]
+                       {'name': 'HS', 'panel': 'hipstr_rn7'},
+    ]
 
     for c in list_of_cohorts:
         c_obj = make_db_cohort(session, c)
