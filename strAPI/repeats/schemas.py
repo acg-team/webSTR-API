@@ -83,6 +83,17 @@ class AlleleFrequency(BaseModel):
     class Config:
         orm_mode = True
 
+class AlleleSequence(BaseModel):
+    population: str
+    n_effective: int
+    frequency: float
+    num_called: int
+    repeat_id: int
+    sequence: str
+
+    class Config:
+        orm_mode = True
+
 class CRCVariation(BaseModel):
     tcga_barcode: str
     sample_type: str

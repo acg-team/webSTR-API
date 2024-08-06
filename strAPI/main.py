@@ -176,6 +176,12 @@ def show_allele_freqs(repeat_id: int, db: Session = Depends(get_db)):
     #    return []
     return allfreqs
 
+@app.get("/allseq/", response_model=List[schemas.AlleleSequence], tags=["Repeats"])
+def show_allele_seq(repeat_id: int, db: Session = Depends(get_db)):
+    allseq = db.query(models.AlleleSequence).filter(models.AlleleSequence.repeat_id == repeat_id).all()
+    return allseq
+
+
 """ 
 Retrieve repeat info given a repeat id 
      
